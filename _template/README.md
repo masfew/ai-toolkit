@@ -60,6 +60,8 @@ Which files it reads and changes, and what runs when. For example: which hook ru
 
 ## Updating
 
+Read the [changes](#changes) first for anything that needs you to do something. Each version is also on the repo's [releases page](https://github.com/masfew/claude-code-toolkit/releases), tagged `<tool-name>-v<version>`, with its notes and a zip of this folder.
+
 From the root of the cloned repo, pull the new version, then rerun the install (PowerShell or bash):
 
 ```bash
@@ -68,7 +70,16 @@ cd <tool-name>
 python install.py
 ```
 
-Read the [changes](#changes) first for anything that needs you to do something.
+To stay on a version, check out its tag instead, then rerun the install (PowerShell or bash):
+
+```bash
+git fetch --tags
+git checkout <tool-name>-v<0.1.0>
+cd <tool-name>
+python install.py
+```
+
+This moves the whole clone, so every other tool in it goes back to that point too. To return to the latest version, run `git checkout main` and `git pull`, then rerun the install. To keep this tool on one version without moving the others, download its zip from the release instead, unzip it somewhere it can stay (the install links to that folder), and run `python install.py` from the `<tool-name>` folder inside it.
 
 ## Uninstall
 

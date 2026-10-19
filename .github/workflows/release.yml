@@ -1,0 +1,38 @@
+# Turns each pushed tool tag into a GitHub release. Tags are named
+# <tool>-v<MAJOR.MINOR.PATCH>, for example example-tool-v1.2.0 (see "Versions
+# and Releases" in the root README). .github/scripts/release_notes.py checks
+# the tag against the tool's README (its version line and Changes entry), takes
+# the release notes from that Changes entry and zips the tool's folder; run it
+# locally to see what a release will hold before pushing its tag.
+# Only this job can write to the repo, actions/checkout is pinned to a commit,
+# and the release is made with the gh CLI that GitHub's runners come with.
+name: Release
+
+on:
+  push:
+    tags:
+      - '*-v*'
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the tag, and write the notes and zip
+        id: build
+        run: python3 .github/scripts/release_notes.py "$GITHUB_REF_NAME" --notes "$RUNNER_TEMP/notes.md" --zip "$RUNNER_TEMP/$GITHUB_REF_NAME.zip"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TOOL: ${{ steps.build.outputs.tool }}
+          VERSION: ${{ steps.build.outputs.version }}
+        run: gh release create "$GITHUB_REF_NAME" "$RUNNER_TEMP/$GITHUB_REF_NAME.zip" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TOOL $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
