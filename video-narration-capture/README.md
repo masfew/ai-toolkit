@@ -1,6 +1,6 @@
 # video-narration-capture
 
-Version 1.0.0. See the [changes](#changes) at the end.
+Version 1.1.0. See the [changes](#changes) at the end.
 
 ## What It Does
 
@@ -74,7 +74,8 @@ Everything below can be done by Claude Code on its own. You only need to approve
    ```
 
    It's safe to rerun, and it:
-   - installs the skill at `~/.claude/skills/video-narration-capture`, where Claude Code finds personal skills. In a git clone it links there (a directory junction on Windows, which needs no admin rights; a symlink on macOS and Linux), so a `git pull` updates the skill. From an unzipped release it copies, and the unzipped folder can be deleted afterwards. `--copy` or `--link` overrides the choice.
+   - puts the tool at `~/.claude/tools/video-narration-capture`. In a git clone that's a link to this folder (a directory junction on Windows, which needs no admin rights; a symlink on macOS and Linux), so a `git pull` updates the skill. From an unzipped release it's a copy, and the unzipped folder can be deleted afterwards. `--copy` or `--link` overrides the choice.
+   - installs the skill at `~/.claude/skills/video-narration-capture`, where Claude Code finds personal skills, as a link to the `skill` folder in `~/.claude/tools/video-narration-capture`;
    - installs ffmpeg if it's missing (winget on Windows, Homebrew on macOS);
    - installs the Python packages `faster-whisper` and `pillow` into the Python that runs the installer (for this user only if the system Python blocks global installs);
    - runs a self-test: builds a pack from a generated video and transcribes it, which downloads the Whisper `small` model (about 500 MB, a few minutes). `--no-test` skips this, and the model then downloads on the first recording instead.
@@ -145,7 +146,7 @@ A pack, conventionally at `references/<subject>/<session-name>/` in the project:
 
 ## How It Works
 
-- `install.py` puts the `skill/` folder at `~/.claude/skills/video-narration-capture` (a link or a copy) and installs the dependencies. It changes nothing else under `~/.claude`, and adds no hooks or settings.
+- `install.py` puts this folder at `~/.claude/tools/video-narration-capture` (a link or a copy), links `~/.claude/skills/video-narration-capture` to the `skill/` folder there, and installs the dependencies. It saves what it installed to `~/.claude/tools/video-narration-capture.install.json`, which a rerun and `--remove` read. It changes nothing else under `~/.claude`, and adds no hooks or settings. Since the skill link points at `~/.claude/tools`, not at the folder you installed from, only `~/.claude/tools/video-narration-capture` has to change if that folder moves.
 - `skill/SKILL.md` tells Claude when to use the skill and how: which template to pick, how to build the pack, which order to read it in, and how to write the breakdown.
 - `skill/scripts/process_video.py` builds the pack. Its `process` subcommand keeps frames with ffmpeg (on scene changes, plus one every `--interval` seconds), transcribes the audio with faster-whisper, pairs each word with the frame on screen when it was spoken, and writes contact sheets with Pillow. Its `dense` subcommand pulls a short range at a high frame rate.
 - `skill/templates/` holds the breakdown structures: `game-teardown.md`, `software-walkthrough.md` and `bug-report.md`.
@@ -179,6 +180,8 @@ python install.py
 
 This moves the whole clone, so every other tool in it goes back to that point too. To return to the latest version, run `git checkout main` and `git pull`, then rerun the install. If you installed from a release zip instead, unzip the new release and run `python install.py` from its `video-narration-capture` folder: it replaces the earlier copy.
 
+If this folder moves or is renamed (for example when the repo is reorganised), rerun `python install.py` from the new folder. It points `~/.claude/tools/video-narration-capture` there and leaves nothing behind from the old folder.
+
 ## Uninstall
 
 From the `video-narration-capture` folder (PowerShell, or bash with `python3` on macOS and Linux):
@@ -187,7 +190,9 @@ From the `video-narration-capture` folder (PowerShell, or bash with `python3` on
 python install.py --remove
 ```
 
-This removes the skill from `~/.claude/skills`. It leaves ffmpeg, the Python packages and the downloaded model in place, since other programs may use them, and prints how to remove each:
+If you installed from a release zip and deleted the unzipped folder, run the same command from `~/.claude/tools/video-narration-capture` instead.
+
+This removes the skill from `~/.claude/skills`, and `~/.claude/tools/video-narration-capture` with its install record, even if you installed from a different folder. It leaves ffmpeg, the Python packages and the downloaded model in place, since other programs may use them, and prints how to remove each:
 
 - Python packages: `python -m pip uninstall faster-whisper pillow`, with the same Python the installer used. pip leaves the packages they pulled in (such as `ctranslate2`, `onnxruntime`, `av` and `tokenizers`); uninstall those too if nothing else needs them.
 - The model: delete the `models--Systran--faster-whisper-small` folder in `~/.cache/huggingface/hub` (and any other `models--Systran--faster-whisper-*` folder there, if you used `--model`).
@@ -203,6 +208,7 @@ This removes the skill from `~/.claude/skills`. It leaves ffmpeg, the Python pac
 | **FAILED: the Whisper model download failed** | The model comes from huggingface.co, which wasn't reachable | Rerun once online. `python install.py --no-test` finishes setup without it, and the model downloads on the first recording |
 | `faster-whisper is not installed` when the skill runs | Claude is running a different Python than the installer used | The installer prints its Python at the end. Use that one, or rerun the installer with the Python Claude uses |
 | `... exists but is not this skill` | Something else is already at `~/.claude/skills/video-narration-capture` | Move it elsewhere, then rerun |
+| `... exists but isn't this tool` | Something else is already at `~/.claude/tools/video-narration-capture` | Move it elsewhere, then rerun |
 | Hugging Face warns about symlinks on Windows | Windows didn't let it make symlinks in its cache | Harmless: the cache just uses a bit more disk. Turning on Windows Developer Mode silences it |
 | No transcript in the pack | The recording has no audio track, or only system audio | Record with the microphone on. Many screen recorders capture system audio only by default |
 
@@ -212,4 +218,5 @@ MIT. See the [LICENSE](../LICENSE) file at the root of the repo.
 
 ## Changes
 
+- 1.1.0: Installs now go through `~/.claude/tools/video-narration-capture`: the skill link points there, and only that one path points at the folder you installed from, so the install survives that folder moving (rerun `python install.py` from the new folder). The install keeps a record of what it added, which reruns and `--remove` use. A rerun is optional: a 1.0.0 install keeps working as it is, and rerunning switches it over.
 - 1.0.0: First public version. Adds `install.py --remove`, and clearer installer messages when ffmpeg, pip or the model download fails.

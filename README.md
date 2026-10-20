@@ -57,7 +57,7 @@ python install.py
 
 A tag holds the whole repo as it was at that release, so every other tool in the clone goes back to that point too. To return to the latest versions, run `git checkout main` and `git pull`, then rerun the installs. (`git pull` on its own doesn't work while a tag is checked out.)
 
-To keep different tools on different versions, download a tool's zip from its release instead of checking out the tag. Unzip it somewhere it can stay, since the install links to that folder, and run `python install.py` from the tool's folder inside it.
+To keep different tools on different versions, download a tool's zip from its release instead of checking out the tag. Unzip it and run `python install.py` from the tool's folder inside it. The install copies the tool to `~/.claude/tools/<tool>`, so the unzipped folder can be deleted afterwards.
 
 ## Versions and Releases
 

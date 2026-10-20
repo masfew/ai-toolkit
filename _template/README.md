@@ -34,9 +34,11 @@ python install.py
 
 1. <Install anything from Requirements that's missing, and how.>
 2. From the tool's folder, run `python install.py` (PowerShell or bash). It:
-   - <links or copies which files to which places under `~/.claude`>
+   - puts the tool at `~/.claude/tools/<tool-name>`. In a git clone that's a link to this folder (a directory junction on Windows, which needs no admin rights; a symlink on macOS and Linux), so a `git pull` updates the tool. From an unzipped release it's a copy, and the unzipped folder can be deleted afterwards. `--copy` or `--link` overrides the choice.
+   - <links which files under `~/.claude/tools/<tool-name>` to which places under `~/.claude`>
    - <adds which entries to `~/.claude/settings.json`, after backing it up>
    - creates `~/.claude/<tool-name>.json` from `config.example.json` if you don't have one yet
+   - saves what it installed to `~/.claude/tools/<tool-name>.install.json`
 3. <Edit the config file, if the tool has one.>
 4. Start a new Claude Code session.
 
@@ -57,6 +59,8 @@ Real examples of using the tool and what to expect from each.
 ## How It Works
 
 Which files it reads and changes, and what runs when. For example: which hook runs on which event, and what it does.
+
+Everything the install adds points at `~/.claude/tools/<tool-name>`, never at the folder you installed from: the hook commands in `settings.json` and the links under `~/.claude`. Only `~/.claude/tools/<tool-name>` itself points at that folder (or holds a copy of it). The install also keeps a record of what it added, in `~/.claude/tools/<tool-name>.install.json`. A rerun reads it first and takes out anything the earlier install added that the new one doesn't, and `--remove` reads it to undo everything.
 
 ## Updating
 
@@ -79,7 +83,9 @@ cd <tool-name>
 python install.py
 ```
 
-This moves the whole clone, so every other tool in it goes back to that point too. To return to the latest version, run `git checkout main` and `git pull`, then rerun the install. To keep this tool on one version without moving the others, download its zip from the release instead, unzip it somewhere it can stay (the install links to that folder), and run `python install.py` from the `<tool-name>` folder inside it.
+This moves the whole clone, so every other tool in it goes back to that point too. To return to the latest version, run `git checkout main` and `git pull`, then rerun the install. To keep this tool on one version without moving the others, download its zip from the release instead, unzip it, and run `python install.py` from the `<tool-name>` folder inside it. The install copies the tool to `~/.claude/tools/<tool-name>`, so the unzipped folder can be deleted afterwards.
+
+If the tool's folder moves or is renamed (for example when the repo is reorganised), the install keeps working as it is. Rerunning `python install.py` from the new folder points `~/.claude/tools/<tool-name>` there and takes out anything stale.
 
 ## Uninstall
 
@@ -89,7 +95,9 @@ From the tool's folder (PowerShell or bash):
 python install.py --remove
 ```
 
-This removes everything the install added. It leaves your config file, `~/.claude/<tool-name>.json`, in place. Delete it yourself if you don't need it.
+If you installed from a release zip and deleted the unzipped folder, run the same command from `~/.claude/tools/<tool-name>` instead.
+
+This removes everything the install added, including `~/.claude/tools/<tool-name>` and its install record, even if the install was made from a different folder. It leaves your config file, `~/.claude/<tool-name>.json`, in place. Delete it yourself if you don't need it.
 
 ## Troubleshooting
 
