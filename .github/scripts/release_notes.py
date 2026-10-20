@@ -10,16 +10,27 @@ will hold. From the root of the repo:
 
 What it checks:
 1. The tag is named <tool>-v<MAJOR.MINOR.PATCH>, for example example-tool-v1.2.0.
-2. <tool> is a folder at the root of the repo with a README.md.
+2. Exactly one tool folder is named <tool>. A tool folder is any folder
+   holding both a README.md and an install.py, outside .github, scripts and
+   _template, at any depth: example-tool/ and category/example-tool/ both count.
 3. The README's version line ("Version X.Y.Z.") matches the tag.
 4. The README's Changes section has an entry for that version
    ("- X.Y.Z: what changed"). A tool that keeps a CHANGELOG.md instead can
    have a heading naming the version there.
 
-The notes are that entry, plus a line on how to install this version. They go
-to standard output unless --notes names a file. --zip packs the tool's folder,
-as committed at --ref (HEAD by default), into a zip whose top folder is the
-tool's name. Only committed files go in, so commit before testing locally.
+Everything is read from the repo as committed at --ref (HEAD by default), so
+commit before testing locally. The notes are the version's entry, plus a line
+on how to install this version. They go to standard output unless --notes
+names a file. --zip packs the tool's folder into a zip whose top folder is the
+tool's name, wherever the folder sits in the repo.
+
+    python .github/scripts/release_notes.py --check-names
+
+checks every tool folder at --ref instead: that no two share a name, and that
+each name is lowercase words joined by hyphens, since release tags, zips and
+install paths use only the name. The secret-scan workflow runs it on every
+push, and scripts/pre_push_check.py runs the same check before every commit
+and push.
 
 In GitHub Actions it also writes tool=<tool> and version=<X.Y.Z> to the step's
 outputs. Exits with status 1 and a FAILED message saying what to fix.
@@ -34,9 +45,14 @@ import zipfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-TAG = re.compile(r"^(?P<tool>[a-z0-9]+(?:-[a-z0-9]+)*)-v(?P<version>\d+\.\d+\.\d+)$")
+NAME = r"[a-z0-9]+(?:-[a-z0-9]+)*"
+TOOL_NAME = re.compile(rf"^{NAME}$")
+TAG = re.compile(rf"^(?P<tool>{NAME})-v(?P<version>\d+\.\d+\.\d+)$")
 VERSION_LINE = re.compile(r"^Version v?(\d+\.\d+\.\d+)\b", re.M)
 HEADING = re.compile(r"^(#+)\s")
+# Folders at the root of the repo that never hold tools: the repo's own
+# workflows and scripts, and the template new tools start from.
+NOT_TOOLS = {".git", ".github", "scripts", "_template"}
 
 
 def fail(msg):
@@ -53,6 +69,73 @@ def parse_tag(tag):
              "for example example-tool-v1.2.0, with the tool's folder name in lowercase.")
     return m.group("tool"), m.group("version")
 
+
+def git(*args):
+    r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotePath=false", *args], capture_output=True)
+    return r.returncode, r.stdout, r.stderr.decode("utf-8", "replace").strip()
+
+
+# --- Tool folders ----------------------------------------------------------
+
+def tool_folders(paths):
+    """The tool folders among repo-relative file paths (with / between parts):
+    every folder holding both a README.md and an install.py, outside the
+    folders in NOT_TOOLS. Sorted, with / between parts."""
+    found = {}
+    for path in paths:
+        folder, _, name = path.rpartition("/")
+        if folder and name in ("README.md", "install.py"):
+            found.setdefault(folder, set()).add(name)
+    return sorted(f for f, names in found.items() if len(names) == 2 and f.split("/")[0] not in NOT_TOOLS)
+
+
+def folder_name(folder):
+    return folder.rpartition("/")[2]
+
+
+def name_problems(folders):
+    """What's wrong with the names of these tool folders, one line per problem."""
+    by_name = {}
+    for folder in folders:
+        by_name.setdefault(folder_name(folder), []).append(folder)
+    problems = []
+    for name, where in sorted(by_name.items()):
+        if not TOOL_NAME.match(name):
+            problems.append(f"{', '.join(where)}: the tool folder name '{name}' isn't lowercase words "
+                            "joined by hyphens, such as example-tool. Rename the folder.")
+        if len(where) > 1:
+            problems.append(f"{len(where)} tool folders are named {name}: {', '.join(where)}. "
+                            "Release tags, zips and install paths use only the folder name, "
+                            "so each tool needs a name of its own. Rename all but one.")
+    return problems
+
+
+def committed_files(ref):
+    code, out, err = git("ls-tree", "-r", "-z", "--name-only", ref)
+    if code != 0:
+        fail(f"couldn't list the files at {ref}. git said: {err}")
+    return [p for p in out.decode("utf-8", "replace").split("\0") if p]
+
+
+def committed_text(ref, path):
+    code, out, err = git("show", f"{ref}:{path}")
+    if code != 0:
+        fail(f"couldn't read {path} at {ref}. git said: {err}")
+    return out.decode("utf-8")
+
+
+def find_tool(tool, version, ref, files):
+    matches = [f for f in tool_folders(files) if folder_name(f) == tool]
+    if not matches:
+        fail(f"there's no tool folder named {tool} at {ref}. The part of the tag before -v{version} has "
+             "to be the name of a folder that holds a README.md and an install.py. Is it committed?")
+    if len(matches) > 1:
+        fail(f"{len(matches)} tool folders are named {tool} at {ref}: {', '.join(matches)}. "
+             "Each tool needs a name of its own. Rename all but one.")
+    return matches[0]
+
+
+# --- Notes -----------------------------------------------------------------
 
 def readme_entry(text, version):
     """The text of the version's entry in the README's Changes section, or None."""
@@ -96,62 +179,85 @@ def changelog_entry(text, version):
     return None
 
 
-def build_notes(tool, version, tag):
-    folder = REPO / tool
-    readme = folder / "README.md"
-    if not readme.is_file():
-        fail(f"there's no {tool}/README.md at the root of the repo. The part of the tag "
-             f"before -v{version} has to be a tool's folder name.")
-    text = readme.read_text(encoding="utf-8")
+def build_notes(tool, version, tag, ref, folder, files):
+    readme = f"{folder}/README.md"
+    text = committed_text(ref, readme)
 
     found = VERSION_LINE.search(text)
     if not found:
-        fail(f"{tool}/README.md has no version line. Add 'Version {version}.' under its title.")
+        fail(f"{readme} has no version line. Add 'Version {version}.' under its title.")
     if found.group(1) != version:
-        fail(f"{tool}/README.md says Version {found.group(1)}, but the tag is for {version}. "
+        fail(f"{readme} says Version {found.group(1)}, but the tag is for {version}. "
              "Update the version line, or tag the version the README names.")
 
-    entry, source = readme_entry(text, version), f"{tool}/README.md"
-    changelog = folder / "CHANGELOG.md"
-    if entry is None and changelog.is_file():
-        entry, source = changelog_entry(changelog.read_text(encoding="utf-8"), version), f"{tool}/CHANGELOG.md"
+    entry, source = readme_entry(text, version), readme
+    changelog = f"{folder}/CHANGELOG.md"
+    if entry is None and changelog in files:
+        entry, source = changelog_entry(committed_text(ref, changelog), version), changelog
     if entry is None:
-        fail(f"{tool}/README.md has no entry for {version} in its Changes section. "
+        fail(f"{readme} has no entry for {version} in its Changes section. "
              f"Add one, such as '- {version}: what changed', at the end of the README.")
     if not entry:
         fail(f"the {version} entry in {source} is empty. Say what changed in this version.")
 
     return (f"{entry}\n\n"
-            f"To install this version, download {tag}.zip below, unzip it somewhere it can stay "
-            f"and run `python install.py` from the {tool} folder. In a clone of the repo, run "
-            f"`git fetch --tags` and `git checkout {tag}` instead. The tool's README has the details.\n")
+            f"To install this version, download {tag}.zip below, unzip it and run `python install.py` "
+            f"from the {tool} folder inside it. The install copies the tool to `~/.claude/tools/{tool}`, "
+            f"so the unzipped folder can be deleted afterwards. In a clone of the repo, run "
+            f"`git fetch --tags` and `git checkout {tag}` instead, then rerun `python install.py` from "
+            f"the tool's folder. The tool's README has the details.\n")
 
 
-def build_zip(tool, ref, path):
+def build_zip(tool, ref, folder, path):
     path = Path(path).resolve()
-    result = subprocess.run(["git", "-C", str(REPO), "archive", "--format=zip", f"--prefix={tool}/",
-                             "-o", str(path), f"{ref}:{tool}"], capture_output=True, text=True)
-    if result.returncode != 0:
-        fail(f"couldn't zip {tool}/ at {ref}. Is the folder committed? git said: {result.stderr.strip()}")
+    code, _, err = git("archive", "--format=zip", f"--prefix={tool}/", "-o", str(path), f"{ref}:{folder}")
+    if code != 0:
+        fail(f"couldn't zip {folder}/ at {ref}. git said: {err}")
     with zipfile.ZipFile(path) as z:
-        files = [n for n in z.namelist() if not n.endswith("/")]
-    if not files:
-        fail(f"the zip of {tool}/ at {ref} is empty.")
-    print(f"zipped {len(files)} files from {tool}/ at {ref} into {path}", file=sys.stderr)
+        zipped = [n for n in z.namelist() if not n.endswith("/")]
+    if not zipped:
+        fail(f"the zip of {folder}/ at {ref} is empty.")
+    print(f"zipped {len(zipped)} files from {folder}/ at {ref} into {path}", file=sys.stderr)
+
+
+def check_names(ref):
+    folders = tool_folders(committed_files(ref))
+    problems = name_problems(folders)
+    if problems:
+        for problem in problems:
+            if os.environ.get("GITHUB_ACTIONS"):
+                print(f"::error::{problem}")
+            print(f"FAILED: {problem}", file=sys.stderr)
+        sys.exit(1)
+    print(f"tool folder names are fine at {ref}: {', '.join(folders) or 'no tool folders'}")
 
 
 def main():
-    p = argparse.ArgumentParser(description="Check a release tag and write its notes and zip.")
-    p.add_argument("tag", help="the release tag, for example example-tool-v1.2.0")
+    p = argparse.ArgumentParser(description="Check a release tag and write its notes and zip, "
+                                            "or check every tool folder's name.")
+    p.add_argument("tag", nargs="?", help="the release tag, for example example-tool-v1.2.0")
     p.add_argument("--notes", help="write the release notes to this file instead of standard output")
     p.add_argument("--zip", help="also zip the tool's folder into this file")
-    p.add_argument("--ref", default="HEAD", help="the commit to zip (default: HEAD)")
+    p.add_argument("--ref", default="HEAD", help="the commit to read the tool from (default: HEAD)")
+    p.add_argument("--check-names", action="store_true",
+                   help="instead of a tag, check that no two tool folders share a name and every name "
+                        "is lowercase words joined by hyphens")
     args = p.parse_args()
 
+    if args.check_names:
+        if args.tag or args.notes or args.zip:
+            p.error("--check-names takes no tag, --notes or --zip")
+        check_names(args.ref)
+        return
+    if not args.tag:
+        p.error("give a release tag, or --check-names")
+
     tool, version = parse_tag(args.tag)
-    notes = build_notes(tool, version, args.tag)
+    files = committed_files(args.ref)
+    folder = find_tool(tool, version, args.ref, files)
+    notes = build_notes(tool, version, args.tag, args.ref, folder, files)
     if args.zip:
-        build_zip(tool, args.ref, args.zip)
+        build_zip(tool, args.ref, folder, args.zip)
     if args.notes:
         Path(args.notes).write_text(notes, encoding="utf-8")
         print(f"wrote the release notes to {args.notes}", file=sys.stderr)

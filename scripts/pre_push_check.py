@@ -12,7 +12,7 @@ Run it by hand from the root of the repo to check the working tree:
 
     python scripts/pre_push_check.py
 
-The three checks:
+The four checks:
 1. gitleaks looks for secrets: tokens, API keys, passwords, private keys.
 2. The identifier search looks for your own identifiers, listed one fixed
    string per line in ~/.claude/public-repo-identifiers.txt (copy
@@ -22,6 +22,9 @@ The three checks:
    GitHub Actions pinned to a commit SHA, and noreply addresses.
 3. Every commit's author and committer email is a GitHub noreply address
    (ending in @users.noreply.github.com).
+4. No two tool folders share a name, and each name is lowercase words joined
+   by hyphens. This is the check `.github/scripts/release_notes.py
+   --check-names` runs, using that script's rule for what a tool folder is.
 
 What it scans:
 - As the hook: only what the push sends. For each branch or tag, that's the
@@ -29,12 +32,13 @@ What it scans:
   new branch or tag, the commits not on any of that remote's tracking
   branches. gitleaks scans those commits. The identifier search reads the
   lines they add, the names of the files they touch, their messages, the
-  names of the pushed branches and tags, and annotated tags' messages.
+  names of the pushed branches and tags, and annotated tags' messages. The
+  name check reads the tool folders in each pushed branch or tag.
   Deleting a remote branch or tag sends nothing, so it isn't checked.
 - By hand, or as the pre-commit hook: every file in the working tree,
   tracked or untracked (ignored files are left out), the commits not on any
-  remote yet, the current branch's name, and the email this clone commits
-  with.
+  remote yet, the current branch's name, the email this clone commits
+  with, and the tool folders in the working tree.
 
 Ends with one "passed" line, or lists every finding with where it is and which
 check found it, then exits with status 1. Exits with status 2 if gitleaks or
@@ -43,6 +47,7 @@ unchecked.
 """
 import argparse
 import glob
+import importlib.util
 import os
 import re
 import shutil
@@ -157,6 +162,20 @@ class Report:
             self.search(f"{where}:{n}", line, path)
 
 
+def check_tool_names(report, where, paths):
+    """Tool folders that share a name, or whose name isn't lowercase words
+    joined by hyphens, among repo-relative file paths."""
+    path = REPO / ".github" / "scripts" / "release_notes.py"
+    try:
+        spec = importlib.util.spec_from_file_location("release_notes", path)
+        release_notes = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(release_notes)
+    except Exception as e:
+        setup_error(f"couldn't load the tool name check from {path.relative_to(REPO).as_posix()}: {e}")
+    for problem in release_notes.name_problems(release_notes.tool_folders(paths)):
+        report.add("tool names", where, problem)
+
+
 def run_gitleaks(report, exe, *args):
     r = subprocess.run([exe, *args, "--redact", "--no-banner", "--no-color", "--verbose",
                         "--exit-code", "1", "--log-level", "warn"],
@@ -231,6 +250,8 @@ def check_push(report, exe, remote, stdin):
         if remote_ref != local_ref:
             report.search(f"pushed ref {remote_ref}", remote_ref)
         check_tag_object(report, local_sha, remote_ref)
+        tree = git_out("ls-tree", "-r", "-z", "--name-only", f"{local_sha}^{{tree}}")
+        check_tool_names(report, f"pushed ref {remote_ref}", [p for p in tree.split("\0") if p])
 
         known = not ZERO_SHA.match(remote_sha) and git("cat-file", "-e", f"{remote_sha}^{{commit}}", ok=(0, 1, 128))[0] == 0
         revs = [f"{remote_sha}..{local_sha}"] if known else [local_sha, "--not", f"--remotes={remote}"]
@@ -257,6 +278,7 @@ def check_working_tree(report, exe):
 
     branch = git_out("rev-parse", "--abbrev-ref", "HEAD").strip()
     report.search("current branch", branch)
+    check_tool_names(report, "working tree", [f for f in files if (REPO / f).exists()])
     email = git_out("config", "user.email").strip() if git("config", "user.email", ok=(0, 1))[0] == 0 else ""
     if not NOREPLY.search(email):
         report.add("noreply", "git config user.email", "this clone doesn't commit with a GitHub noreply address")
@@ -282,7 +304,8 @@ def main():
         scanned = check_working_tree(report, exe)
 
     if not report.findings:
-        print(f"Pre-push check passed: no secrets, identifiers or non-noreply emails in {scanned}.")
+        print(f"Pre-push check passed: no secrets, identifiers, non-noreply emails or tool name "
+              f"problems in {scanned}.")
         return
     print(f"Pre-push check FAILED: {len(report.findings)} finding{'s' * (len(report.findings) != 1)} "
           f"in {scanned}.\n", file=sys.stderr)

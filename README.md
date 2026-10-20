@@ -97,10 +97,10 @@ The release workflow then checks the tag against the README again, and makes the
 |---|---|
 | `<tool>/` | One folder per tool, with its own README, `install.py` and `config.example.json` where it needs one |
 | `_template/` | The starting point for a new tool |
-| `.github/workflows/secret-scan.yml` | Scans every push for secrets with [gitleaks](https://github.com/gitleaks/gitleaks) |
+| `.github/workflows/secret-scan.yml` | Scans every push for secrets with [gitleaks](https://github.com/gitleaks/gitleaks), and checks that no two tool folders share a name |
 | `.github/workflows/release.yml` | Turns each pushed `<tool>-v<version>` tag into a GitHub release |
-| `.github/scripts/release_notes.py` | Checks a release tag against the tool's README, and writes the release's notes and zip |
-| `scripts/pre_push_check.py` | Checks a push for secrets, personal identifiers and non-noreply commit emails (see [Before You Push](#before-you-push)) |
+| `.github/scripts/release_notes.py` | Finds a release tag's tool folder at any depth, checks the tag against the tool's README, and writes the release's notes and zip. `--check-names` checks that tool folder names are unique |
+| `scripts/pre_push_check.py` | Checks a push for secrets, personal identifiers, non-noreply commit emails and clashing tool folder names (see [Before You Push](#before-you-push)) |
 | `scripts/public-repo-identifiers.example.txt` | A starting point for the identifier list the check reads |
 | `.githooks/pre-push` | The git hook that runs the check before every push, once turned on |
 | `.githooks/pre-commit` | The git hook that runs the check on the working tree before every commit, once turned on |

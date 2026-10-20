@@ -1,9 +1,11 @@
 # Turns each pushed tool tag into a GitHub release. Tags are named
 # <tool>-v<MAJOR.MINOR.PATCH>, for example example-tool-v1.2.0 (see "Versions
-# and Releases" in the root README). .github/scripts/release_notes.py checks
-# the tag against the tool's README (its version line and Changes entry), takes
-# the release notes from that Changes entry and zips the tool's folder; run it
-# locally to see what a release will hold before pushing its tag.
+# and Releases" in the root README). .github/scripts/release_notes.py finds
+# the one tool folder with that name, at any depth in the repo, checks the tag
+# against its README (its version line and Changes entry), takes the release
+# notes from that Changes entry and zips the folder with the tool's name as its
+# top folder; run it locally to see what a release will hold before pushing
+# its tag.
 # Only this job can write to the repo, actions/checkout is pinned to a commit,
 # and the release is made with the gh CLI that GitHub's runners come with.
 name: Release
