@@ -1,6 +1,6 @@
 # video-narration-capture
 
-Version 1.1.0. See the [changes](#changes) at the end.
+Version 1.1.1. See the [changes](#changes) at the end.
 
 ## What It Does
 
@@ -209,6 +209,7 @@ This removes the skill from `~/.claude/skills`, and `~/.claude/tools/video-narra
 | `faster-whisper is not installed` when the skill runs | Claude is running a different Python than the installer used | The installer prints its Python at the end. Use that one, or rerun the installer with the Python Claude uses |
 | `... exists but is not this skill` | Something else is already at `~/.claude/skills/video-narration-capture` | Move it elsewhere, then rerun |
 | `... exists but isn't this tool` | Something else is already at `~/.claude/tools/video-narration-capture` | Move it elsewhere, then rerun |
+| `couldn't delete ~/.claude/tools/video-narration-capture` after `--remove` | A terminal or another program was open in that folder, so it was emptied but not deleted | Nothing else is left behind. Close it; the next `python install.py` or `--remove` deletes the empty folder |
 | Hugging Face warns about symlinks on Windows | Windows didn't let it make symlinks in its cache | Harmless: the cache just uses a bit more disk. Turning on Windows Developer Mode silences it |
 | No transcript in the pack | The recording has no audio track, or only system audio | Record with the microphone on. Many screen recorders capture system audio only by default |
 
@@ -218,5 +219,6 @@ MIT. See the [LICENSE](https://github.com/masfew/ai-toolkit/blob/main/LICENSE) f
 
 ## Changes
 
+- 1.1.1: A `--remove` run from the installed copy, in a terminal open in that folder, could leave `~/.claude/tools/video-narration-capture` behind empty on Windows, and the next install then stopped with "exists but isn't this tool". Installs and `--remove` now delete that empty folder.
 - 1.1.0: Installs now go through `~/.claude/tools/video-narration-capture`: the skill link points there, and only that one path points at the folder you installed from, so the install survives that folder moving (rerun `python install.py` from the new folder). The install keeps a record of what it added, which reruns and `--remove` use. A rerun is optional: a 1.0.0 install keeps working as it is, and rerunning switches it over.
 - 1.0.0: First public version. Adds `install.py --remove`, and clearer installer messages when ffmpeg, pip or the model download fails.

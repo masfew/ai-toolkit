@@ -170,6 +170,11 @@ def is_installed_copy(path):
             and f'TOOL_NAME = "{TOOL_NAME}"' in script.read_text(encoding="utf-8"))
 
 
+def is_empty_dir(path):
+    """True if path is a real, empty folder, such as one left when --remove couldn't delete it."""
+    return not is_link(path) and path.is_dir() and not any(path.iterdir())
+
+
 def clear_stable_dir():
     if not exists(STABLE_DIR):
         return
@@ -177,6 +182,12 @@ def clear_stable_dir():
         remove_link(STABLE_DIR)
     elif is_installed_copy(STABLE_DIR):
         shutil.rmtree(STABLE_DIR)
+    elif is_empty_dir(STABLE_DIR):
+        try:
+            os.rmdir(STABLE_DIR)
+        except OSError as e:
+            fail(f"couldn't delete the empty folder {STABLE_DIR} ({e}). Close anything using it, "
+                 "such as a terminal open in it, then rerun.")
     else:
         fail(f"{STABLE_DIR} exists but isn't this tool. Move it elsewhere, then rerun.")
 
@@ -218,6 +229,13 @@ def remove_stable_dir():
         except OSError as e:
             print(f"couldn't delete {STABLE_DIR} ({e}). Close anything using it, such as a "
                   "terminal open in it, then delete it yourself.")
+    elif is_empty_dir(STABLE_DIR):
+        try:
+            os.rmdir(STABLE_DIR)
+            print(f"removed the empty folder {STABLE_DIR}")
+        except OSError as e:
+            print(f"couldn't delete the empty folder {STABLE_DIR} ({e}). Close anything using it, "
+                  "such as a terminal open in it, then delete it yourself.")
     else:
         print(f"left {STABLE_DIR} alone: it isn't this tool")
 
