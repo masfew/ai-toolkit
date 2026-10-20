@@ -8,7 +8,7 @@ Each tool lives in its own folder, works on its own, and has a README that cover
 
 | Tool | What it does | Tested on |
 |---|---|---|
-| _None yet_ | | |
+| [video-narration-capture](video-narration-capture/) | Skill that turns a narrated screen or gameplay recording into key frames, a timestamped transcript and a written breakdown (game teardown, software walkthrough or bug report) that agents can work from | Windows 11 (macOS and Linux untested) |
 
 ## Installing a Tool
 
