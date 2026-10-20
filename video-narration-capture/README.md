@@ -214,7 +214,7 @@ This removes the skill from `~/.claude/skills`, and `~/.claude/tools/video-narra
 
 ## License
 
-MIT. See the [LICENSE](../LICENSE) file at the root of the repo.
+MIT. See the [LICENSE](https://github.com/masfew/ai-toolkit/blob/main/LICENSE) file at the root of the repo.
 
 ## Changes
 

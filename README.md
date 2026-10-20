@@ -8,7 +8,13 @@ Each tool lives in its own folder, works on its own, and has a README that cover
 
 | Tool | What it does | Tested on |
 |---|---|---|
-| [video-narration-capture](video-narration-capture/) | Skill that turns a narrated screen or gameplay recording into key frames, a timestamped transcript and a written breakdown (game teardown, software walkthrough or bug report) that agents can work from | Windows 11 (macOS and Linux untested) |
+| <a id="video-narration-capture"></a>[video-narration-capture](video-narration-capture/) | Skill that turns a narrated screen or gameplay recording into key frames, a timestamped transcript and a written breakdown (game teardown, software walkthrough or bug report) that agents can work from | Windows 11 (macOS and Linux untested) |
+
+## Linking to a Tool
+
+To share a tool, link to its row in the table above: `https://github.com/masfew/ai-toolkit#<tool>`, for example [`https://github.com/masfew/ai-toolkit#video-narration-capture`](https://github.com/masfew/ai-toolkit#video-narration-capture). To share a version you can download, link to the [releases page](https://github.com/masfew/ai-toolkit/releases).
+
+Don't link to a tool's folder. The folders may move into category folders later, and a folder link would then break. The row link and the release names stay the same wherever the folder goes.
 
 ## Installing a Tool
 
@@ -95,7 +101,7 @@ The release workflow then checks the tag against the README again, and makes the
 
 | Path | What it holds |
 |---|---|
-| `<tool>/` | One folder per tool, with its own README, `install.py` and `config.example.json` where it needs one |
+| `<tool>/` | One folder per tool, with its own README, `install.py` and `config.example.json` where it needs one. The tool folders are at the root today and may move into category folders later, so link to a tool as [Linking to a Tool](#linking-to-a-tool) says |
 | `_template/` | The starting point for a new tool |
 | `.github/workflows/secret-scan.yml` | Scans every push for secrets with [gitleaks](https://github.com/gitleaks/gitleaks), and checks that no two tool folders share a name |
 | `.github/workflows/release.yml` | Turns each pushed `<tool>-v<version>` tag into a GitHub release |
