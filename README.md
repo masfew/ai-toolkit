@@ -14,6 +14,12 @@ The tools are grouped by kind: skills, hooks, output styles and so on.
 |---|---|---|
 | <a id="video-narration-capture"></a>[video-narration-capture](video-narration-capture/) | Skill that turns a narrated screen or gameplay recording into key frames, a timestamped transcript and a written breakdown (game teardown, software walkthrough or bug report) that agents can work from | Windows 11 (macOS and Linux untested) |
 
+### Output Styles
+
+| Tool | What it does | Tested on |
+|---|---|---|
+| <a id="get-to-the-point"></a>[get-to-the-point](get-to-the-point/) | Output style that makes every reply quick to read: what matters first, plain words, no play-by-play, technical depth only when it helps, and numbered rules you can point a reply at ("point 13"). Built for running several sessions side by side | Windows 11 (macOS and Linux untested) |
+
 ## Linking to a Tool
 
 To share a tool, link to its row in the Tools tables above: `https://github.com/masfew/ai-toolkit#<tool>`, for example [`https://github.com/masfew/ai-toolkit#video-narration-capture`](https://github.com/masfew/ai-toolkit#video-narration-capture). To share a version you can download, link to the [releases page](https://github.com/masfew/ai-toolkit/releases).
