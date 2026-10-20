@@ -2,8 +2,9 @@
 """
 Checks what's about to be pushed for secrets and personal information, and
 stops the push if it finds any. The repo's pre-push hook (.githooks/pre-push)
-runs it before every `git push`. Turn the hook on once per clone, from the
-root of the repo:
+runs it before every `git push`, and its pre-commit hook (.githooks/pre-commit)
+runs it on the working tree before every `git commit`. Turn both hooks on once
+per clone, from the root of the repo:
 
     git config core.hooksPath .githooks
 
@@ -30,9 +31,10 @@ What it scans:
   lines they add, the names of the files they touch, their messages, the
   names of the pushed branches and tags, and annotated tags' messages.
   Deleting a remote branch or tag sends nothing, so it isn't checked.
-- By hand: every file in the working tree, tracked or untracked (ignored
-  files are left out), the commits not on any remote yet, the current
-  branch's name, and the email this clone commits with.
+- By hand, or as the pre-commit hook: every file in the working tree,
+  tracked or untracked (ignored files are left out), the commits not on any
+  remote yet, the current branch's name, and the email this clone commits
+  with.
 
 Ends with one "passed" line, or lists every finding with where it is and which
 check found it, then exits with status 1. Exits with status 2 if gitleaks or

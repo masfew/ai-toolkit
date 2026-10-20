@@ -103,6 +103,7 @@ The release workflow then checks the tag against the README again, and makes the
 | `scripts/pre_push_check.py` | Checks a push for secrets, personal identifiers and non-noreply commit emails (see [Before You Push](#before-you-push)) |
 | `scripts/public-repo-identifiers.example.txt` | A starting point for the identifier list the check reads |
 | `.githooks/pre-push` | The git hook that runs the check before every push, once turned on |
+| `.githooks/pre-commit` | The git hook that runs the check on the working tree before every commit, once turned on |
 
 ## Personal Settings
 
@@ -114,11 +115,11 @@ Issues and pull requests are turned off, since this is a personal toolkit. You'r
 
 ### Before You Push
 
-If you push from your own clone or fork, you can turn on the pre-push check this repo uses. Before every `git push`, it stops the push if the commits being pushed hold a secret (found by [gitleaks](https://github.com/gitleaks/gitleaks)), one of your own identifiers, or an author or committer email that isn't a [GitHub noreply address](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-email-preferences/setting-your-commit-email-address). It's optional.
+If you push from your own clone or fork, you can turn on the checks this repo uses. Before every `git commit`, the pre-commit hook checks the working tree and stops the commit if it finds a problem, so nothing has to be rewritten later. Before every `git push`, the pre-push hook stops the push if the commits being pushed hold a secret (found by [gitleaks](https://github.com/gitleaks/gitleaks)), one of your own identifiers, or an author or committer email that isn't a [GitHub noreply address](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-email-preferences/setting-your-commit-email-address). It's optional.
 
 1. Install gitleaks, for example with `winget install Gitleaks.Gitleaks` on Windows or `brew install gitleaks` on macOS.
 2. Copy `scripts/public-repo-identifiers.example.txt` to `~/.claude/public-repo-identifiers.txt` and replace its examples with your own: your username, real name, email addresses, private project names and anything else that mustn't be published. Keep it outside the repo.
-3. Turn on the hook once in your clone, from its root (PowerShell or bash):
+3. Turn on both hooks once in your clone, from its root (PowerShell or bash):
 
    ```bash
    git config core.hooksPath .githooks
@@ -130,7 +131,7 @@ To run the same check by hand on the working tree, from the root of the repo (Po
 python scripts/pre_push_check.py
 ```
 
-The check stops the push, rather than letting it through, if gitleaks or the identifier list is missing. It only finds the identifiers on your list, so it doesn't replace reading your own diff before you push.
+The check stops the commit or push, rather than letting it through, if gitleaks or the identifier list is missing. It only finds the identifiers on your list, so it doesn't replace reading your own diff before you push.
 
 ## License
 
