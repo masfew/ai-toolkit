@@ -1,4 +1,4 @@
-# Claude Code Toolkit
+# AI Toolkit
 
 A personal, unofficial collection of tools for [Claude Code](https://claude.com/claude-code): hooks, skills, output styles and helper scripts. It isn't made, endorsed or supported by Anthropic.
 
@@ -17,7 +17,7 @@ You need [Claude Code](https://claude.com/claude-code), [Git](https://git-scm.co
 1. Clone the repo. This works the same in PowerShell and bash:
 
    ```bash
-   git clone https://github.com/masfew/claude-code-toolkit.git
+   git clone https://github.com/masfew/ai-toolkit.git
    ```
 
 2. Open the tool's folder and follow its README. Most tools install with one command, run from inside the tool's folder (PowerShell or bash):
@@ -36,7 +36,7 @@ You need [Claude Code](https://claude.com/claude-code), [Git](https://git-scm.co
 
 ## Updating
 
-Before you update, see what changed. Each tool's README ends with a Changes list, and each release on the [releases page](https://github.com/masfew/claude-code-toolkit/releases) has that version's notes. When the first number of a version goes up, its notes say what you need to do.
+Before you update, see what changed. Each tool's README ends with a Changes list, and each release on the [releases page](https://github.com/masfew/ai-toolkit/releases) has that version's notes. When the first number of a version goes up, its notes say what you need to do.
 
 Pull the latest version, then rerun the install of each tool you use, from inside the tool's folder (PowerShell or bash):
 
@@ -71,7 +71,7 @@ Each tool has its own version number, since the tools change at different times.
 
 A tool's version is in the version line at the top of its README, and each version has an entry at the end, under Changes, written as `- 1.2.0: what changed`. If a tool is packaged as a Claude Code plugin, its `plugin.json` carries the same version.
 
-Each release has a git tag named `<tool>-v<version>`, for example `example-tool-v1.2.0`, and a [GitHub release](https://github.com/masfew/claude-code-toolkit/releases) with that version's Changes entry as its notes and a zip of the tool's folder.
+Each release has a git tag named `<tool>-v<version>`, for example `example-tool-v1.2.0`, and a [GitHub release](https://github.com/masfew/ai-toolkit/releases) with that version's Changes entry as its notes and a zip of the tool's folder.
 
 ### Making a Release
 

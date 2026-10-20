@@ -61,7 +61,7 @@ NOREPLY = re.compile(r"\x40users\.noreply\.github\.com$", re.I)
 # wholly inside a match of one of these.
 ALLOWED = [
     # Links to this repo on GitHub, which hold its owner's username.
-    (None, re.compile(r"github\.com/[\w.-]+/claude-code-toolkit\b[\w./#?=&%-]*", re.I)),
+    (None, re.compile(r"github\.com/[\w.-]+/ai-toolkit\b[\w./#?=&%-]*", re.I)),
     # The copyright holder in the license.
     ("LICENSE", re.compile(r"^Copyright \(c\) \d{4}.*$")),
     # GitHub Actions pinned to a full commit SHA, as in the workflows.

@@ -60,7 +60,7 @@ Which files it reads and changes, and what runs when. For example: which hook ru
 
 ## Updating
 
-Read the [changes](#changes) first for anything that needs you to do something. Each version is also on the repo's [releases page](https://github.com/masfew/claude-code-toolkit/releases), tagged `<tool-name>-v<version>`, with its notes and a zip of this folder.
+Read the [changes](#changes) first for anything that needs you to do something. Each version is also on the repo's [releases page](https://github.com/masfew/ai-toolkit/releases), tagged `<tool-name>-v<version>`, with its notes and a zip of this folder.
 
 From the root of the cloned repo, pull the new version, then rerun the install (PowerShell or bash):
 
