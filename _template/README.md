@@ -2,7 +2,7 @@
 Starting a new tool:
 1. Copy this folder to a new folder named after the tool (lowercase, hyphens).
 2. Replace every <placeholder> and the guidance under each heading. Keep every heading.
-3. Set TOOL_NAME, FILES, HOOKS and PROGRAMS in install.py, and delete config.example.json if the tool has no settings.
+3. Set TOOL_NAME, FILES, HOOKS and PROGRAMS in install.py, and delete config.example.json if the tool has no settings. Keep the install.py functions the tool uses as they are, or mark why one differs, as the top of install.py explains.
 4. Add the tool's row to the root README's Tools section, in the table under the heading for its kind of tool (such as "Skills"; add a heading with its own table if none fits), starting with <a id="<tool-name>"></a> so that https://github.com/masfew/ai-toolkit#<tool-name> links to the row. The name must not match a heading in the root README (such as "updating").
 5. Delete this comment.
 -->

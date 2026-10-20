@@ -12,7 +12,7 @@ Run it by hand from the root of the repo to check the working tree:
 
     python scripts/pre_push_check.py
 
-The four checks:
+The five checks:
 1. gitleaks looks for secrets: tokens, API keys, passwords, private keys.
 2. The identifier search looks for your own identifiers, listed one fixed
    string per line in ~/.claude/public-repo-identifiers.txt (copy
@@ -25,6 +25,15 @@ The four checks:
 4. No two tool folders share a name, and each name is lowercase words joined
    by hyphens. This is the check `.github/scripts/release_notes.py
    --check-names` runs, using that script's rule for what a tool folder is.
+5. Each tool's install.py keeps the functions it shares with
+   _template/install.py as they are there, so a fix made in one copy reaches
+   the others. Every top-level function both files define is compared as
+   text, docstring and comments included. One that differs is a finding
+   unless the tool's copy says why, with a comment line
+   `# differs from _template: <reason>` between its def line and its first
+   statement (so above any docstring). A marked function that matches the
+   template again is a finding too, so the marker gets deleted. Functions
+   only one of the two files has are ignored.
 
 What it scans:
 - As the hook: only what the push sends. For each branch or tag, that's the
@@ -33,12 +42,13 @@ What it scans:
   branches. gitleaks scans those commits. The identifier search reads the
   lines they add, the names of the files they touch, their messages, the
   names of the pushed branches and tags, and annotated tags' messages. The
-  name check reads the tool folders in each pushed branch or tag.
+  name and installer checks read the tool folders in each pushed branch or
+  tag, as that branch or tag has them.
   Deleting a remote branch or tag sends nothing, so it isn't checked.
 - By hand, or as the pre-commit hook: every file in the working tree,
   tracked or untracked (ignored files are left out), the commits not on any
   remote yet, the current branch's name, the email this clone commits
-  with, and the tool folders in the working tree.
+  with, and the tool folders and installers in the working tree.
 
 Ends with one "passed" line, or lists every finding with where it is and which
 check found it, then exits with status 1. Exits with status 2 if gitleaks or
@@ -46,6 +56,7 @@ the identifier list is missing, so the push stops rather than going through
 unchecked.
 """
 import argparse
+import ast
 import glob
 import importlib.util
 import os
@@ -62,6 +73,9 @@ ZERO_SHA = re.compile(r"^0+$")
 AS_HOOK = False  # set when git runs the script as the pre-push hook
 # The at sign is written as \x40 in this file, so it passes its own search.
 NOREPLY = re.compile(r"\x40users\.noreply\.github\.com$", re.I)
+TEMPLATE_INSTALLER = "_template/install.py"
+# The comment that says why a tool's installer function differs from the template's.
+DIFFERS = re.compile(r"^\s*#\s*differs from _template:(.*)$")
 
 # Text an identifier may appear inside: (only in this file, or None for any
 # file, commit message or ref name; pattern). A hit is allowed when it lies
@@ -162,18 +176,90 @@ class Report:
             self.search(f"{where}:{n}", line, path)
 
 
+_release_notes = None
+
+
+def release_notes():
+    """.github/scripts/release_notes.py, which holds the rule for what a tool folder is."""
+    global _release_notes
+    if _release_notes is None:
+        path = REPO / ".github" / "scripts" / "release_notes.py"
+        try:
+            spec = importlib.util.spec_from_file_location("release_notes", path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+        except Exception as e:
+            setup_error(f"couldn't load the tool folder rule from {path.relative_to(REPO).as_posix()}: {e}")
+        _release_notes = module
+    return _release_notes
+
+
 def check_tool_names(report, where, paths):
     """Tool folders that share a name, or whose name isn't lowercase words
     joined by hyphens, among repo-relative file paths."""
-    path = REPO / ".github" / "scripts" / "release_notes.py"
-    try:
-        spec = importlib.util.spec_from_file_location("release_notes", path)
-        release_notes = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(release_notes)
-    except Exception as e:
-        setup_error(f"couldn't load the tool name check from {path.relative_to(REPO).as_posix()}: {e}")
-    for problem in release_notes.name_problems(release_notes.tool_folders(paths)):
+    rn = release_notes()
+    for problem in rn.name_problems(rn.tool_folders(paths)):
         report.add("tool names", where, problem)
+
+
+def installer_functions(text, path):
+    """An installer's top-level functions: name -> (line, source without the
+    marker line, the marker's reason or None if it has no marker)."""
+    text = text.replace("\r\n", "\n")
+    lines = text.split("\n")
+    functions = {}
+    for node in ast.parse(text, filename=path).body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        # The marker is a comment between the def line and the first statement.
+        reason = None
+        for line in lines[node.lineno:node.body[0].lineno - 1]:
+            m = DIFFERS.match(line)
+            if m:
+                reason = m.group(1).strip()
+        source = "\n".join(line for line in ast.get_source_segment(text, node).split("\n")
+                           if not DIFFERS.match(line))
+        functions[node.name] = (node.lineno, source, reason)
+    return functions
+
+
+def check_installers(report, paths, read, ref=None):
+    """Functions in each tool's install.py that differ from _template/install.py's
+    and don't say why. paths are repo-relative file paths; read(path) gives a file's text."""
+    if TEMPLATE_INSTALLER not in paths:
+        return
+    where = f"{ref} " if ref else ""
+
+    def parse(path):
+        try:
+            return installer_functions(read(path), path)
+        except SyntaxError as e:
+            report.add("installers", f"{where}{path}:{e.lineno}",
+                       f"isn't valid Python ({e.msg}), so it couldn't be compared with {TEMPLATE_INSTALLER}")
+            return None
+
+    template = parse(TEMPLATE_INSTALLER)
+    if template is None:
+        return
+    for folder in release_notes().tool_folders(paths):
+        path = f"{folder}/install.py"
+        functions = parse(path)
+        for name, (line, source, reason) in (functions or {}).items():
+            if name not in template:
+                continue
+            same = source == template[name][1]
+            if reason is None and not same:
+                report.add("installers", f"{where}{path}:{line}",
+                           f"{name}() differs from the one in {TEMPLATE_INSTALLER}. Make it match, move the "
+                           f"change into the template and every tool that has {name}(), or, if it differs on "
+                           "purpose, add the line `# differs from _template: <reason>` right under its def.")
+            elif reason == "":
+                report.add("installers", f"{where}{path}:{line}",
+                           f"{name}() has a `# differs from _template:` line with no reason. Say why it differs.")
+            elif reason is not None and same:
+                report.add("installers", f"{where}{path}:{line}",
+                           f"{name}() is marked as differing from the one in {TEMPLATE_INSTALLER}, but matches "
+                           "it. Delete the `# differs from _template:` line.")
 
 
 def run_gitleaks(report, exe, *args):
@@ -250,8 +336,10 @@ def check_push(report, exe, remote, stdin):
         if remote_ref != local_ref:
             report.search(f"pushed ref {remote_ref}", remote_ref)
         check_tag_object(report, local_sha, remote_ref)
-        tree = git_out("ls-tree", "-r", "-z", "--name-only", f"{local_sha}^{{tree}}")
-        check_tool_names(report, f"pushed ref {remote_ref}", [p for p in tree.split("\0") if p])
+        tree = [p for p in git_out("ls-tree", "-r", "-z", "--name-only", f"{local_sha}^{{tree}}").split("\0") if p]
+        check_tool_names(report, f"pushed ref {remote_ref}", tree)
+        check_installers(report, tree, lambda path, sha=local_sha: git_out("show", f"{sha}:{path}"),
+                         f"pushed ref {remote_ref}")
 
         known = not ZERO_SHA.match(remote_sha) and git("cat-file", "-e", f"{remote_sha}^{{commit}}", ok=(0, 1, 128))[0] == 0
         revs = [f"{remote_sha}..{local_sha}"] if known else [local_sha, "--not", f"--remotes={remote}"]
@@ -278,7 +366,9 @@ def check_working_tree(report, exe):
 
     branch = git_out("rev-parse", "--abbrev-ref", "HEAD").strip()
     report.search("current branch", branch)
-    check_tool_names(report, "working tree", [f for f in files if (REPO / f).exists()])
+    present = [f for f in files if (REPO / f).exists()]
+    check_tool_names(report, "working tree", present)
+    check_installers(report, present, lambda path: (REPO / path).read_text(encoding="utf-8", errors="replace"))
     email = git_out("config", "user.email").strip() if git("config", "user.email", ok=(0, 1))[0] == 0 else ""
     if not NOREPLY.search(email):
         report.add("noreply", "git config user.email", "this clone doesn't commit with a GitHub noreply address")
@@ -304,15 +394,17 @@ def main():
         scanned = check_working_tree(report, exe)
 
     if not report.findings:
-        print(f"Pre-push check passed: no secrets, identifiers, non-noreply emails or tool name "
-              f"problems in {scanned}.")
+        print(f"Pre-push check passed: no secrets, identifiers, non-noreply emails, tool name "
+              f"problems or installer drift in {scanned}.")
         return
     print(f"Pre-push check FAILED: {len(report.findings)} finding{'s' * (len(report.findings) != 1)} "
           f"in {scanned}.\n", file=sys.stderr)
     for finding in report.findings:
         print(f"  {finding}", file=sys.stderr)
-    print("\nRemove each one (rewriting the commits that hold it) and try again. Nothing was pushed."
-          if args.remote else "\nRemove each one before pushing.", file=sys.stderr)
+    print("\nFix each one and try again. A secret, identifier or email has to come out of the commits "
+          "that hold it (rewrite them); tool name and installer findings can be fixed in a new commit. "
+          "Nothing was pushed."
+          if args.remote else "\nFix each one before pushing.", file=sys.stderr)
     sys.exit(1)
 
 

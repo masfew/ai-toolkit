@@ -7,8 +7,19 @@ Installs <tool-name> for Claude Code. Safe to rerun.
     python install.py --link     install a link even outside a git clone
     python install.py --remove   undo everything the install added
 
-Starting a new tool from this template: set TOOL_NAME, fill in FILES, HOOKS
-and PROGRAMS (or leave them empty), and delete anything the tool doesn't need.
+Starting a new tool from this template: set TOOL_NAME, and fill in FILES,
+HOOKS and PROGRAMS or leave them empty. Delete whole functions the tool doesn't
+use, but keep the ones it uses as they are here. scripts/pre_push_check.py
+compares every function a tool's install.py shares with this file, and fails
+on one that differs, so a fix made in one copy reaches the others. When a tool
+needs a function to work differently, add this line right under its def
+(above any docstring), with the reason:
+
+    # differs from _template: <reason>
+
+When changing a function here, make the same change in every tool that has
+it. The check lists each tool that doesn't, but not the copies marked as
+differing: search the tools for "differs from _template" to find those.
 
 What it does:
 1. Checks that Python and every program in PROGRAMS are installed, and says
@@ -310,6 +321,9 @@ def install_file(rel_src, rel_dst):
         shutil.copy2(src, dst)
     print(f"copied {src} -> {dst}")
     print("  The system didn't allow a link, so rerun this script after each update.")
+    if os.name == "nt" and src.is_file():
+        # Folders use junctions, which need no Developer Mode; file links do.
+        print("  Turning on Windows Developer Mode and rerunning makes it a link.")
     return "copy", made
 
 
@@ -349,9 +363,12 @@ def load_settings():
     if not SETTINGS_FILE.exists():
         return {}
     try:
-        return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+        settings = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         fail(f"{SETTINGS_FILE} isn't valid JSON ({e}). Fix it, then rerun.")
+    if not isinstance(settings, dict):
+        fail(f"{SETTINGS_FILE} doesn't hold a JSON object. Fix it, then rerun.")
+    return settings
 
 
 def save_settings(settings):

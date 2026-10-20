@@ -116,7 +116,7 @@ The release workflow then checks the tag against the README again, and makes the
 | `.github/workflows/secret-scan.yml` | Scans every push for secrets with [gitleaks](https://github.com/gitleaks/gitleaks), and checks that no two tool folders share a name |
 | `.github/workflows/release.yml` | Turns each pushed `<tool>-v<version>` tag into a GitHub release |
 | `.github/scripts/release_notes.py` | Finds a release tag's tool folder at any depth, checks the tag against the tool's README, and writes the release's notes and zip. `--check-names` checks that tool folder names are unique |
-| `scripts/pre_push_check.py` | Checks a push for secrets, personal identifiers, non-noreply commit emails and clashing tool folder names (see [Before You Push](#before-you-push)) |
+| `scripts/pre_push_check.py` | Checks a push for secrets, personal identifiers, non-noreply commit emails, clashing tool folder names and tool installers that drift from `_template/install.py` (see [Before You Push](#before-you-push)) |
 | `scripts/public-repo-identifiers.example.txt` | A starting point for the identifier list the check reads |
 | `.githooks/pre-push` | The git hook that runs the check before every push, once turned on |
 | `.githooks/pre-commit` | The git hook that runs the check on the working tree before every commit, once turned on |
@@ -146,6 +146,8 @@ To run the same check by hand on the working tree, from the root of the repo (Po
 ```bash
 python scripts/pre_push_check.py
 ```
+
+Both hooks and the hand-run check also compare each tool's `install.py` with `_template/install.py`, function by function, and stop on a function that differs, so a fix made in one copy reaches the others. A tool that needs a function to work differently says why with a `# differs from _template: <reason>` line right under its `def`. The top of `_template/install.py` has the details.
 
 The check stops the commit or push, rather than letting it through, if gitleaks or the identifier list is missing. It only finds the identifiers on your list, so it doesn't replace reading your own diff before you push.
 
