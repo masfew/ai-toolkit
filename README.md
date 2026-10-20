@@ -6,13 +6,17 @@ Each tool lives in its own folder, works on its own, and has a README that cover
 
 ## Tools
 
+The tools are grouped by kind: skills, hooks, output styles and so on.
+
+### Skills
+
 | Tool | What it does | Tested on |
 |---|---|---|
 | <a id="video-narration-capture"></a>[video-narration-capture](video-narration-capture/) | Skill that turns a narrated screen or gameplay recording into key frames, a timestamped transcript and a written breakdown (game teardown, software walkthrough or bug report) that agents can work from | Windows 11 (macOS and Linux untested) |
 
 ## Linking to a Tool
 
-To share a tool, link to its row in the table above: `https://github.com/masfew/ai-toolkit#<tool>`, for example [`https://github.com/masfew/ai-toolkit#video-narration-capture`](https://github.com/masfew/ai-toolkit#video-narration-capture). To share a version you can download, link to the [releases page](https://github.com/masfew/ai-toolkit/releases).
+To share a tool, link to its row in the Tools tables above: `https://github.com/masfew/ai-toolkit#<tool>`, for example [`https://github.com/masfew/ai-toolkit#video-narration-capture`](https://github.com/masfew/ai-toolkit#video-narration-capture). To share a version you can download, link to the [releases page](https://github.com/masfew/ai-toolkit/releases).
 
 Don't link to a tool's folder. The folders may move into category folders later, and a folder link would then break. The row link and the release names stay the same wherever the folder goes.
 
