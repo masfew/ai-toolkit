@@ -20,6 +20,14 @@ The tools are grouped by kind: skills, hooks, output styles and so on.
 |---|---|---|
 | <a id="get-to-the-point"></a>[get-to-the-point](get-to-the-point/) | Output style that makes every reply quick to read: what matters first, plain words, no play-by-play, technical depth only when it helps, and numbered rules you can point a reply at ("point 13"). Built for running several sessions side by side | Windows 11 (macOS and Linux untested) |
 
+### Claude Code Mods
+
+Mods are Claude Code plugins that change Claude Code's own interface or behaviour. They install with one command and no clone, as [Installing a Mod](#installing-a-mod) says.
+
+| Tool | What it does | Tested on |
+|---|---|---|
+| <a id="usage-rings"></a>[usage-rings](usage-rings/) | Ring gauges next to the prompt box for context, 5-hour and 7-day usage, blue, then orange from 70% and red from 90%: above the box in the desktop app, as text bars under it in the terminal | Windows 11 (macOS and Linux untested) |
+
 ## Linking to a Tool
 
 To share a tool, link to its row in the Tools tables above: `https://github.com/masfew/ai-toolkit#<tool>`, for example [`https://github.com/masfew/ai-toolkit#video-narration-capture`](https://github.com/masfew/ai-toolkit#video-narration-capture). To share a version you can download, link to the [releases page](https://github.com/masfew/ai-toolkit/releases).
@@ -49,6 +57,16 @@ You need [Claude Code](https://claude.com/claude-code), [Git](https://git-scm.co
    ```bash
    python install.py --remove
    ```
+
+### Installing a Mod
+
+The repo is also a Claude Code plugin marketplace named `ai-toolkit`, listing the [Claude Code Mods](#claude-code-mods). A mod installs without a clone, with one command in a terminal (PowerShell or bash):
+
+```bash
+claude plugin install <mod> --marketplace masfew/ai-toolkit
+```
+
+At the prompt of a Claude Code session in the terminal, `/plugin install <mod> --marketplace masfew/ai-toolkit` does the same. Each mod's README also covers installing from a clone with `python install.py`, updating and removing it.
 
 ## Updating
 
@@ -113,6 +131,7 @@ The release workflow then checks the tag against the README again, and makes the
 |---|---|
 | `<tool>/` | One folder per tool, with its own README, `install.py` and `config.example.json` where it needs one. The tool folders are at the root today and may move into category folders later, so link to a tool as [Linking to a Tool](#linking-to-a-tool) says |
 | `_template/` | The starting point for a new tool |
+| `.claude-plugin/marketplace.json` | Makes the repo the `ai-toolkit` plugin marketplace, listing each Claude Code mod and its folder. A mod's folder moving means changing its `source` here |
 | `.github/workflows/secret-scan.yml` | Scans every push for secrets with [gitleaks](https://github.com/gitleaks/gitleaks), and checks that no two tool folders share a name |
 | `.github/workflows/release.yml` | Turns each pushed `<tool>-v<version>` tag into a GitHub release |
 | `.github/scripts/release_notes.py` | Finds a release tag's tool folder at any depth, checks the tag against the tool's README, and writes the release's notes and zip. `--check-names` checks that tool folder names are unique |

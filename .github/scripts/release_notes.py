@@ -17,10 +17,13 @@ What it checks:
 4. The README's Changes section has an entry for that version
    ("- X.Y.Z: what changed"). A tool that keeps a CHANGELOG.md instead can
    have a heading naming the version there.
+5. A tool packaged as a Claude Code plugin (its folder holds
+   .claude-plugin/plugin.json) has the same version in its plugin.json.
 
 Everything is read from the repo as committed at --ref (HEAD by default), so
 commit before testing locally. The notes are the version's entry, plus a line
-on how to install this version. They go to standard output unless --notes
+on how to install this version (for a plugin, how to install it from the
+repo's plugin marketplace). They go to standard output unless --notes
 names a file. --zip packs the tool's folder into a zip whose top folder is the
 tool's name, wherever the folder sits in the repo.
 
@@ -36,6 +39,7 @@ In GitHub Actions it also writes tool=<tool> and version=<X.Y.Z> to the step's
 outputs. Exits with status 1 and a FAILED message saying what to fix.
 """
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -179,6 +183,18 @@ def changelog_entry(text, version):
     return None
 
 
+def repo_slug():
+    """The GitHub repo as <owner>/<name>: from the workflow, or from the origin remote's URL."""
+    slug = os.environ.get("GITHUB_REPOSITORY")
+    if slug:
+        return slug
+    code, url, _ = git("remote", "get-url", "origin")
+    m = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$", url.decode("utf-8", "replace").strip())
+    if code != 0 or not m:
+        fail("couldn't tell the repo's <owner>/<name> from the origin remote. Set GITHUB_REPOSITORY.")
+    return m.group(1)
+
+
 def build_notes(tool, version, tag, ref, folder, files):
     readme = f"{folder}/README.md"
     text = committed_text(ref, readme)
@@ -199,6 +215,21 @@ def build_notes(tool, version, tag, ref, folder, files):
              f"Add one, such as '- {version}: what changed', at the end of the README.")
     if not entry:
         fail(f"the {version} entry in {source} is empty. Say what changed in this version.")
+
+    manifest = f"{folder}/.claude-plugin/plugin.json"
+    if manifest in files:
+        try:
+            plugin_version = json.loads(committed_text(ref, manifest)).get("version")
+        except json.JSONDecodeError as e:
+            fail(f"{manifest} isn't valid JSON ({e}).")
+        if plugin_version != version:
+            fail(f"{manifest} says version {plugin_version}, but the tag is for {version}. "
+                 "Give plugin.json the same version as the README.")
+        return (f"{entry}\n\n"
+                f"This is a Claude Code mod. To install the latest version, run "
+                f"`claude plugin install {tool} --marketplace {repo_slug()}` in a terminal. To install "
+                f"this version, clone the repo, run `git fetch --tags` and `git checkout {tag}`, then run "
+                f"`python install.py` from the tool's folder. The tool's README has the details.\n")
 
     return (f"{entry}\n\n"
             f"To install this version, download {tag}.zip below, unzip it and run `python install.py` "

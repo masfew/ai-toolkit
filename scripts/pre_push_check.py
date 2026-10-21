@@ -83,6 +83,10 @@ DIFFERS = re.compile(r"^\s*#\s*differs from _template:(.*)$")
 ALLOWED = [
     # Links to this repo on GitHub, which hold its owner's username.
     (None, re.compile(r"github\.com/[\w.-]+/ai-toolkit\b[\w./#?=&%-]*", re.I)),
+    # This repo as <owner>/ai-toolkit in a mod's one-line install from its plugin marketplace.
+    (None, re.compile(r"--marketplace\s+[\w.-]+/ai-toolkit\b", re.I)),
+    # Plugin IDs from this repo's marketplace, <plugin>@ai-toolkit (not an address at an ai-toolkit domain).
+    (None, re.compile(r"[\w-]*\x40ai-toolkit(?![\w.-])", re.I)),
     # The copyright holder in the license.
     ("LICENSE", re.compile(r"^Copyright \(c\) \d{4}.*$")),
     # GitHub Actions pinned to a full commit SHA, as in the workflows.
