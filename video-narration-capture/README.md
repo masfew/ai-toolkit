@@ -58,7 +58,7 @@ It ends with **Setup complete**. Then give Claude a recording, as in [Usage](#us
 
 Everything below can be done by Claude Code on its own. You only need to approve the installs.
 
-1. **Get the folder.** Either clone the repo (`git clone https://github.com/masfew/ai-toolkit.git`), or download `video-narration-capture-v<version>.zip` from the [releases page](https://github.com/masfew/ai-toolkit/releases) and unzip it.
+1. **Get the folder.** Either clone the repo (`git clone https://github.com/masfew/toolbox.git`), or download `video-narration-capture-v<version>.zip` from the [releases page](https://github.com/masfew/toolbox/releases) and unzip it.
 
 2. **Python 3.9 or newer.** Check with `python --version` (on macOS and Linux, `python3 --version`; on Windows `py --version` also works). If it's missing:
    - Windows: `winget install Python.Python.3.13`, then open a new terminal so `python` is on PATH.
@@ -159,7 +159,7 @@ Add a Markdown file to `skill/templates/` in the same style as the others (what 
 
 ## Updating
 
-Read the [changes](#changes) first for anything that needs you to do something. Each version is also on the repo's [releases page](https://github.com/masfew/ai-toolkit/releases), tagged `video-narration-capture-v<version>`, with its notes and a zip of this folder.
+Read the [changes](#changes) first for anything that needs you to do something. Each version is also on the repo's [releases page](https://github.com/masfew/toolbox/releases), tagged `video-narration-capture-v<version>`, with its notes and a zip of this folder.
 
 From the root of the cloned repo, pull the new version, then rerun the install (PowerShell, or bash with `python3` on macOS and Linux):
 
@@ -215,7 +215,7 @@ This removes the skill from `~/.claude/skills`, and `~/.claude/tools/video-narra
 
 ## License
 
-MIT. See the [LICENSE](https://github.com/masfew/ai-toolkit/blob/main/LICENSE) file at the root of the repo.
+MIT. See the [LICENSE](https://github.com/masfew/toolbox/blob/main/LICENSE) file at the root of the repo.
 
 ## Changes
 

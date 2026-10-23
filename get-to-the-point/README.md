@@ -43,7 +43,7 @@ It ends with **Setup complete**. New Claude Code sessions use the style from the
 
 **This changes the default output style for every new Claude Code session**, in every project, until you remove it or pick another style. Sessions that are already open keep their style.
 
-1. **Get the folder.** Either clone the repo (`git clone https://github.com/masfew/ai-toolkit.git`), or download `get-to-the-point-v<version>.zip` from the [releases page](https://github.com/masfew/ai-toolkit/releases) and unzip it.
+1. **Get the folder.** Either clone the repo (`git clone https://github.com/masfew/toolbox.git`), or download `get-to-the-point-v<version>.zip` from the [releases page](https://github.com/masfew/toolbox/releases) and unzip it.
 
 2. **Python 3.9 or newer.** Check with `python --version` (on macOS and Linux, `python3 --version`; on Windows `py --version` also works). If it's missing:
    - Windows: `winget install Python.Python.3.13`, then open a new terminal so `python` is on PATH.
@@ -103,7 +103,7 @@ Everything the install adds points at `~/.claude/tools/get-to-the-point`, never 
 
 ## Updating
 
-Read the [changes](#changes) first for anything that needs you to do something. Each version is also on the repo's [releases page](https://github.com/masfew/ai-toolkit/releases), tagged `get-to-the-point-v<version>`, with its notes and a zip of this folder.
+Read the [changes](#changes) first for anything that needs you to do something. Each version is also on the repo's [releases page](https://github.com/masfew/toolbox/releases), tagged `get-to-the-point-v<version>`, with its notes and a zip of this folder.
 
 From the root of the cloned repo, pull the new version, then rerun the install (PowerShell, or bash with `python3` on macOS and Linux):
 
@@ -154,7 +154,7 @@ This removes the style from `~/.claude/output-styles`, and `~/.claude/tools/get-
 
 ## License
 
-MIT. See the [LICENSE](https://github.com/masfew/ai-toolkit/blob/main/LICENSE) file at the root of the repo.
+MIT. See the [LICENSE](https://github.com/masfew/toolbox/blob/main/LICENSE) file at the root of the repo.
 
 ## Changes
 

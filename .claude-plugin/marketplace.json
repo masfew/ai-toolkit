@@ -1,7 +1,7 @@
 {
-  "name": "ai-toolkit",
-  "owner": { "name": "ai-toolkit", "url": "https://github.com/masfew/ai-toolkit" },
-  "description": "Claude Code mods from the ai-toolkit repo",
+  "name": "toolbox",
+  "owner": { "name": "toolbox", "url": "https://github.com/masfew/toolbox" },
+  "description": "Claude Code mods from the toolbox repo",
   "plugins": [
     {
       "name": "usage-rings",

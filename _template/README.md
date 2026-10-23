@@ -3,7 +3,7 @@ Starting a new tool:
 1. Copy this folder to a new folder named after the tool (lowercase, hyphens).
 2. Replace every <placeholder> and the guidance under each heading. Keep every heading.
 3. Set TOOL_NAME, FILES, HOOKS and PROGRAMS in install.py, and delete config.example.json if the tool has no settings. Keep the install.py functions the tool uses as they are, or mark why one differs, as the top of install.py explains.
-4. Add the tool's row to the root README's Tools section, in the table under the heading for its kind of tool (such as "Skills"; add a heading with its own table if none fits), starting with <a id="<tool-name>"></a> so that https://github.com/masfew/ai-toolkit#<tool-name> links to the row. The name must not match a heading in the root README (such as "updating").
+4. Add the tool's row to the root README's Tools section, in the table under the heading for its kind of tool (such as "Skills"; add a heading with its own table if none fits), starting with <a id="<tool-name>"></a> so that https://github.com/masfew/toolbox#<tool-name> links to the row. The name must not match a heading in the root README (such as "updating").
 5. Delete this comment.
 -->
 # <Tool Name>
@@ -64,7 +64,7 @@ Everything the install adds points at `~/.claude/tools/<tool-name>`, never at th
 
 ## Updating
 
-Read the [changes](#changes) first for anything that needs you to do something. Each version is also on the repo's [releases page](https://github.com/masfew/ai-toolkit/releases), tagged `<tool-name>-v<version>`, with its notes and a zip of this folder.
+Read the [changes](#changes) first for anything that needs you to do something. Each version is also on the repo's [releases page](https://github.com/masfew/toolbox/releases), tagged `<tool-name>-v<version>`, with its notes and a zip of this folder.
 
 From the root of the cloned repo, pull the new version, then rerun the install (PowerShell or bash):
 
@@ -107,7 +107,7 @@ This removes everything the install added, including `~/.claude/tools/<tool-name
 
 ## License
 
-MIT. See the [LICENSE](https://github.com/masfew/ai-toolkit/blob/main/LICENSE) file at the root of the repo.
+MIT. See the [LICENSE](https://github.com/masfew/toolbox/blob/main/LICENSE) file at the root of the repo.
 
 ## Changes
 

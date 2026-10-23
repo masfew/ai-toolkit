@@ -1,6 +1,6 @@
-# AI Toolkit
+# Toolbox
 
-A personal, unofficial collection of tools for [Claude Code](https://claude.com/claude-code): hooks, skills, output styles and helper scripts. It isn't made, endorsed or supported by Anthropic.
+A personal, unofficial collection of tools: add-ons for [Claude Code](https://claude.com/claude-code) (hooks, skills, output styles, mods and helper scripts) and other tools for working on a PC. None of it is made, endorsed or supported by Anthropic.
 
 Each tool lives in its own folder, works on its own, and has a README that covers what it does, how to install it, how to configure it and how to remove it.
 
@@ -30,7 +30,7 @@ Mods are Claude Code plugins that change Claude Code's own interface or behaviou
 
 ## Linking to a Tool
 
-To share a tool, link to its row in the Tools tables above: `https://github.com/masfew/ai-toolkit#<tool>`, for example [`https://github.com/masfew/ai-toolkit#video-narration-capture`](https://github.com/masfew/ai-toolkit#video-narration-capture). To share a version you can download, link to the [releases page](https://github.com/masfew/ai-toolkit/releases).
+To share a tool, link to its row in the Tools tables above: `https://github.com/masfew/toolbox#<tool>`, for example [`https://github.com/masfew/toolbox#video-narration-capture`](https://github.com/masfew/toolbox#video-narration-capture). To share a version you can download, link to the [releases page](https://github.com/masfew/toolbox/releases).
 
 Don't link to a tool's folder. The folders may move into category folders later, and a folder link would then break. The row link and the release names stay the same wherever the folder goes.
 
@@ -41,7 +41,7 @@ You need [Claude Code](https://claude.com/claude-code), [Git](https://git-scm.co
 1. Clone the repo. This works the same in PowerShell and bash:
 
    ```bash
-   git clone https://github.com/masfew/ai-toolkit.git
+   git clone https://github.com/masfew/toolbox.git
    ```
 
 2. Open the tool's folder and follow its README. Most tools install with one command, run from inside the tool's folder (PowerShell or bash):
@@ -60,17 +60,17 @@ You need [Claude Code](https://claude.com/claude-code), [Git](https://git-scm.co
 
 ### Installing a Mod
 
-The repo is also a Claude Code plugin marketplace named `ai-toolkit`, listing the [Claude Code Mods](#claude-code-mods). A mod installs without a clone, with one command in a terminal (PowerShell or bash):
+The repo is also a Claude Code plugin marketplace named `toolbox`, listing the [Claude Code Mods](#claude-code-mods). A mod installs without a clone, with one command in a terminal (PowerShell or bash):
 
 ```bash
-claude plugin install <mod> --marketplace masfew/ai-toolkit
+claude plugin install <mod> --marketplace masfew/toolbox
 ```
 
-At the prompt of a Claude Code session in the terminal, `/plugin install <mod> --marketplace masfew/ai-toolkit` does the same. Each mod's README also covers installing from a clone with `python install.py`, updating and removing it.
+At the prompt of a Claude Code session in the terminal, `/plugin install <mod> --marketplace masfew/toolbox` does the same. Each mod's README also covers installing from a clone with `python install.py`, updating and removing it.
 
 ## Updating
 
-Before you update, see what changed. Each tool's README ends with a Changes list, and each release on the [releases page](https://github.com/masfew/ai-toolkit/releases) has that version's notes. When the first number of a version goes up, its notes say what you need to do.
+Before you update, see what changed. Each tool's README ends with a Changes list, and each release on the [releases page](https://github.com/masfew/toolbox/releases) has that version's notes. When the first number of a version goes up, its notes say what you need to do.
 
 Pull the latest version, then rerun the install of each tool you use, from inside the tool's folder (PowerShell or bash):
 
@@ -105,7 +105,7 @@ Each tool has its own version number, since the tools change at different times.
 
 A tool's version is in the version line at the top of its README, and each version has an entry at the end, under Changes, written as `- 1.2.0: what changed`. If a tool is packaged as a Claude Code plugin, its `plugin.json` carries the same version.
 
-Each release has a git tag named `<tool>-v<version>`, for example `example-tool-v1.2.0`, and a [GitHub release](https://github.com/masfew/ai-toolkit/releases) with that version's Changes entry as its notes and a zip of the tool's folder.
+Each release has a git tag named `<tool>-v<version>`, for example `example-tool-v1.2.0`, and a [GitHub release](https://github.com/masfew/toolbox/releases) with that version's Changes entry as its notes and a zip of the tool's folder.
 
 ### Making a Release
 
@@ -131,7 +131,7 @@ The release workflow then checks the tag against the README again, and makes the
 |---|---|
 | `<tool>/` | One folder per tool, with its own README, `install.py` and `config.example.json` where it needs one. The tool folders are at the root today and may move into category folders later, so link to a tool as [Linking to a Tool](#linking-to-a-tool) says |
 | `_template/` | The starting point for a new tool |
-| `.claude-plugin/marketplace.json` | Makes the repo the `ai-toolkit` plugin marketplace, listing each Claude Code mod and its folder. A mod's folder moving means changing its `source` here |
+| `.claude-plugin/marketplace.json` | Makes the repo the `toolbox` plugin marketplace, listing each Claude Code mod and its folder. A mod's folder moving means changing its `source` here |
 | `.github/workflows/secret-scan.yml` | Scans every push for secrets with [gitleaks](https://github.com/gitleaks/gitleaks), and checks that no two tool folders share a name |
 | `.github/workflows/release.yml` | Turns each pushed `<tool>-v<version>` tag into a GitHub release |
 | `.github/scripts/release_notes.py` | Finds a release tag's tool folder at any depth, checks the tag against the tool's README, and writes the release's notes and zip. `--check-names` checks that tool folder names are unique |
@@ -146,7 +146,7 @@ No tool stores your personal values in this repo. A tool that needs settings (a 
 
 ## Contributing
 
-Issues and pull requests are turned off, since this is a personal toolkit. You're welcome to fork it and change anything under the license.
+Issues and pull requests are turned off, since this is a personal toolbox. You're welcome to fork it and change anything under the license.
 
 ### Before You Push
 
