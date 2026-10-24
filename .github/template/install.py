@@ -2,14 +2,20 @@
 """
 Installs <tool-name> for Claude Code. Safe to rerun.
 
-    python install.py            install, or update an earlier install
-    python install.py --copy     install a copy instead of a link
-    python install.py --link     install a link even outside a git clone
-    python install.py --remove   undo everything the install added
+    python install.py                    install, or update an earlier install
+    python install.py --copy             install a copy instead of a link
+    python install.py --link             install a link even outside a git clone
+    python install.py --remove           undo everything the install added
+    python install.py --instructions     add the CLAUDE.md block without asking
+    python install.py --no-instructions  leave the CLAUDE.md block out (or take it out)
+
+The last two exist only for a tool that sets INSTRUCTIONS.
 
 Starting a new tool from this template: set TOOL_NAME, and fill in FILES,
-HOOKS and PROGRAMS or leave them empty. Delete whole functions the tool doesn't
-use, but keep the ones it uses as they are here. .github/scripts/pre_push_check.py
+HOOKS, PROGRAMS, STARTUP, INSTRUCTIONS and HUMAN_STEPS or leave them empty.
+Delete whole functions the tool doesn't use (a tool with no STARTUP needs none
+of section 6, one with no INSTRUCTIONS none of section 7), but keep the ones it
+uses as they are here. .github/scripts/pre_push_check.py
 compares every function a tool's install.py shares with this file, and fails
 on one that differs, so a fix made in one copy reaches the others. When a tool
 needs a function to work differently, add this line right under its def
@@ -22,6 +28,11 @@ it. The check lists each tool that doesn't, but not the copies marked as
 differing: search the tools for "differs from the template" to find those.
 
 What it does:
+0. On Windows, if the tool writes under AppData (STARTUP, or NEEDS_REAL_APPDATA)
+   and this process is one the Claude desktop app started, Windows redirects
+   those writes into the app's private package folder, where nothing else sees
+   them. The install then reruns itself outside the package and passes its
+   output and exit status back.
 1. Checks that Python and every program in PROGRAMS are installed, and says
    how to get any that are missing.
 2. Puts the tool at one fixed place, ~/.claude/tools/<tool-name>, so nothing
@@ -38,22 +49,35 @@ What it does:
    entry twice, and leaves every other setting alone.
 5. Creates the personal config file ~/.claude/<tool-name>.json from
    config.example.json if there isn't one yet.
-6. Saves what it installed to ~/.claude/tools/<tool-name>.install.json.
+6. Windows: stops the tool's own background processes (any Python process
+   running a script from ~/.claude/tools/<tool-name> or this folder), adds a
+   Startup shortcut for each entry in STARTUP that runs it through
+   ~/.claude/tools/<tool-name> at sign-in, and starts each one now.
+7. If INSTRUCTIONS is set, adds it to ~/.claude/CLAUDE.md as a block between
+   two marker lines, after showing it and asking. --instructions and
+   --no-instructions answer ahead of time. With no terminal to ask in (as when
+   Claude Code runs the install) and neither flag, it leaves the block out and
+   prints the command that adds it.
+8. Saves what it installed to ~/.claude/tools/<tool-name>.install.json.
+9. Ends with "Setup complete", then lists HUMAN_STEPS: what only the person
+   can do, for Claude to read out one at a time.
 
 On a rerun it reads that record first and takes out whatever the earlier
 install added that this one doesn't, so a rerun from a moved or renamed
 folder leaves nothing stale behind.
 
---remove undoes 2, 3, 4 and 6, using the record (or, for an install made
-before there was one, the hook commands and files this folder would add). It
-leaves the personal config file in place, since it holds the user's own
-values, and says where it is.
+--remove undoes 2, 3, 4, 6, 7 and 8, using the record (or, for an install
+made before there was one, the hook commands, files and Startup shortcuts this
+folder would add). It leaves the personal config file in place, since it holds
+the user's own values, and says where it is.
 
 Ends with "Setup complete" (or "Removed"), or exits with status 1 and a
 FAILED message saying what to do.
 """
 import argparse
+import base64
 import filecmp
+import glob
 import json
 import os
 import shutil
@@ -61,6 +85,7 @@ import stat
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 TOOL_NAME = "example-tool"  # TODO: the tool's folder name
@@ -80,6 +105,27 @@ HOOKS = []
 # Example: ("gitleaks", "winget install Gitleaks.Gitleaks")
 PROGRAMS = []
 
+# Windows only. Background programs to start at sign-in: (shortcut name, script
+# in this folder, arguments). Each runs with pythonw, with no window, through
+# ~/.claude/tools/<tool-name>, and the install starts it straight away.
+# Example: ("Example Tool helper", "helper.py", "run --at-login")
+STARTUP = []
+
+# True if the tool writes under AppData itself, so the install has to run
+# outside the Claude desktop app's package (STARTUP needs it too, always).
+NEEDS_REAL_APPDATA = False
+
+# Text to add to ~/.claude/CLAUDE.md, which every Claude Code session loads,
+# between marker lines. Keep it to a few lines that say when to use the tool.
+# Example: "- Before writing any plan, load the example-tool skill."
+INSTRUCTIONS = ""
+
+# Steps only the person can do, listed after "Setup complete": accounts,
+# secrets typed into a hidden prompt, clicks in other apps. Keep each one a
+# single instruction that says where to do it.
+# Example: "Open Example App's settings and turn on Allow plugins."
+HUMAN_STEPS = []
+
 TOOL_DIR = Path(__file__).resolve().parent
 CLAUDE_DIR = Path.home() / ".claude"
 TOOLS_DIR = CLAUDE_DIR / "tools"
@@ -89,6 +135,10 @@ RECORD_FORMAT = 1
 SETTINGS_FILE = CLAUDE_DIR / "settings.json"
 CONFIG_EXAMPLE = TOOL_DIR / "config.example.json"
 CONFIG_FILE = CLAUDE_DIR / f"{TOOL_NAME}.json"
+CLAUDE_MD = CLAUDE_DIR / "CLAUDE.md"
+BLOCK_START = f"<!-- {TOOL_NAME}: start of the lines its install.py added. `python install.py --remove` takes them out. -->"
+BLOCK_END = f"<!-- {TOOL_NAME}: end -->"
+OUTSIDE_PACKAGE = "TOOLBOX_INSTALL_OUTSIDE_PACKAGE"  # set on the rerun outside the app's package
 COPY_IGNORE = shutil.ignore_patterns(".git", "__pycache__", "*.pyc")
 
 
@@ -108,6 +158,85 @@ def backup(path):
     else:
         shutil.copy2(path, copy)
     print(f"backed up {path} -> {copy}")
+
+
+def powershell(script):
+    """Runs a Windows PowerShell script and returns the finished process."""
+    return subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                           "-Command", script], capture_output=True, text=True)
+
+
+def ps_quote(value):
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+# --- 0. Outside the Claude app's package -----------------------------------
+
+def in_app_package():
+    """True if Windows redirects this process's AppData writes into a packaged
+    app's private folder, as it does for anything the Claude desktop app starts.
+    Such a process doesn't report a package identity, so this writes a probe
+    file and looks for where it landed."""
+    local = os.environ.get("LOCALAPPDATA")
+    if os.name != "nt" or not local or os.environ.get(OUTSIDE_PACKAGE):
+        return False
+    probe = Path(local) / f"{TOOL_NAME}-probe-{uuid.uuid4().hex}"
+    try:
+        probe.write_text("", encoding="utf-8")
+    except OSError:
+        return False
+    try:
+        return bool(glob.glob(os.path.join(local, "Packages", "*", "LocalCache", "Local", probe.name)))
+    finally:
+        try:
+            probe.unlink()
+        except OSError:
+            pass
+
+
+def rerun_outside_app_package(argv):
+    """Runs this script again with argv, outside the app's package, then prints
+    its output and exits with its status. Windows starts a process created
+    through WMI outside the package. That process gets the user's default
+    environment, so the overrides that decide where things go are passed on."""
+    print("Running the install outside the Claude app's package, so it reaches the real AppData folders...")
+    TOOLS_DIR.mkdir(parents=True, exist_ok=True)  # ~/.claude isn't under AppData, so both processes see it
+    run_id = uuid.uuid4().hex
+    log = TOOLS_DIR / f"{TOOL_NAME}.install-output-{run_id}.txt"
+    code = TOOLS_DIR / f"{TOOL_NAME}.install-status-{run_id}.txt"
+    env = "".join(f"$env:{name} = {ps_quote(os.environ[name])}; "
+                  for name in ("HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "CLAUDE_CONFIG_DIR", "PATH")
+                  if name in os.environ)
+    # The rerun writes its own output to the log (see main), since Windows
+    # PowerShell would write it as UTF-16 and mangle what goes to stderr.
+    inner = (f"{env}$env:{OUTSIDE_PACKAGE} = {ps_quote(log)}; "
+             f"& {ps_quote(sys.executable)} {ps_quote(Path(__file__).resolve())} "
+             + " ".join(ps_quote(a) for a in argv)
+             + f"; Set-Content -LiteralPath {ps_quote(code)} -Value $LASTEXITCODE")
+    encoded = base64.b64encode(inner.encode("utf-16-le")).decode("ascii")
+    command = (f"powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden "
+               f"-EncodedCommand {encoded}")
+    started = powershell(f"$p = Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList {ps_quote(command)}; "
+                         "if ($p.ReturnValue -ne 0) { Write-Output \"failed $($p.ReturnValue)\"; exit 1 }; "
+                         "Wait-Process -Id $p.ProcessId -ErrorAction SilentlyContinue")
+    try:
+        if started.returncode != 0:
+            fail(f"couldn't start the install outside the Claude app's package ({started.stdout.strip()}"
+                 f"{started.stderr.strip()}). Run `python install.py` in a terminal outside the Claude app instead.")
+        if log.exists():
+            print(log.read_text(encoding="utf-8", errors="replace"), end="")
+        status = code.read_text(encoding="utf-8-sig").strip() if code.exists() else ""
+    finally:
+        for path in (log, code):
+            try:
+                path.unlink()
+            except OSError:
+                pass
+        try:
+            TOOLS_DIR.rmdir()  # a --remove left it in place while the log was open in it
+        except OSError:
+            pass
+    sys.exit(int(status) if status.lstrip("-").isdigit() else 1)
 
 
 # --- 1. Dependencies -------------------------------------------------------
@@ -463,7 +592,183 @@ def create_config():
     print("  Replace its placeholder values with your own before using the tool.")
 
 
-# --- 6. Install record -----------------------------------------------------
+# --- 6. Startup entries and background processes ---------------------------
+
+def startup_dir():
+    return Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+
+
+def pythonw():
+    """pythonw.exe, which runs a script with no window. The Python install
+    manager's alias survives Python upgrades; a versioned install folder doesn't."""
+    alias = Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "WindowsApps" / "pythonw.exe"
+    if alias.exists():
+        return alias
+    sibling = Path(sys.executable).with_name("pythonw.exe")
+    return sibling if sibling.exists() else Path(sys.executable)
+
+
+def stop_processes():
+    """Stops every Python process running a script from STABLE_DIR or this
+    folder, other than this install, so its files can be replaced or removed."""
+    if os.name != "nt":
+        return
+    r = powershell("Get-CimInstance Win32_Process -Filter \"Name like 'python%'\" | "
+                   "Select-Object ProcessId, CommandLine | ConvertTo-Json -Compress")
+    try:
+        found = json.loads(r.stdout) if r.stdout.strip() else []
+    except json.JSONDecodeError:
+        found = []
+    if isinstance(found, dict):
+        found = [found]
+    folders = [os.path.normcase(str(d)).replace("/", "\\") for d in (STABLE_DIR, TOOL_DIR)]
+    for proc in found:
+        line = os.path.normcase(proc.get("CommandLine") or "").replace("/", "\\")
+        pid = proc.get("ProcessId")
+        if pid in (os.getpid(), os.getppid()) or "install.py" in line or not any(f in line for f in folders):
+            continue
+        if powershell(f"Stop-Process -Id {int(pid)} -Force").returncode == 0:
+            print(f"stopped the running {TOOL_NAME} process {pid}")
+
+
+# Background programs run from ~/.claude, not from the tool's folder: a running
+# program's working folder can't be moved or renamed on Windows, so a git pull
+# or a move of the clone would fail while it runs.
+
+def make_shortcut(link, target, script, arguments, description):
+    ps = ("$s = (New-Object -ComObject WScript.Shell).CreateShortcut({link}); "
+          "$s.TargetPath = {target}; $s.Arguments = {args}; $s.WorkingDirectory = {cwd}; "
+          "$s.Description = {desc}; $s.Save()").format(
+        link=ps_quote(link), target=ps_quote(target), cwd=ps_quote(CLAUDE_DIR), desc=ps_quote(description),
+        args=ps_quote(subprocess.list2cmdline([str(script), *arguments])))
+    r = powershell(ps)
+    if r.returncode != 0:
+        fail(f"couldn't create the Startup shortcut {link} ({r.stderr.strip()}).")
+
+
+def start_detached(target, script, arguments):
+    subprocess.Popen([str(target), str(script), *arguments], cwd=str(CLAUDE_DIR),
+                     creationflags=0x00000008 | 0x00000200,  # DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def remove_startup(links):
+    for link in map(Path, links):
+        if exists(link):
+            link.unlink()
+            print(f"removed the Startup shortcut {link}")
+
+
+def install_startup(old_record):
+    """Adds a Startup shortcut for each entry in STARTUP and starts it, and takes
+    out the earlier install's shortcuts that this one doesn't add. Returns the
+    shortcuts' paths."""
+    old = (old_record or {}).get("startup", [])
+    links = []
+    if STARTUP and os.name != "nt":
+        print("skipped the Startup shortcuts, which are for Windows only. Start these yourself: "
+              + ", ".join(f"python {STABLE_DIR / script} {' '.join(arguments)}".strip()
+                          for _name, script, arguments in STARTUP))
+    elif STARTUP:
+        target = pythonw()
+        startup_dir().mkdir(parents=True, exist_ok=True)
+        for name, script, arguments in STARTUP:
+            if not (TOOL_DIR / script).is_file():
+                fail(f"{TOOL_DIR / script} is missing. Is this the complete {TOOL_NAME} folder?")
+            link = startup_dir() / f"{name}.lnk"
+            make_shortcut(link, target, STABLE_DIR / script, arguments, name)
+            start_detached(target, STABLE_DIR / script, arguments)
+            links.append(str(link))
+            print(f"added the Startup shortcut {link}, and started it")
+    remove_startup(p for p in old if not any(same_path(p, link) for link in links))
+    return links
+
+
+# --- 7. CLAUDE.md block ----------------------------------------------------
+
+def instructions_block():
+    return f"{BLOCK_START}\n{INSTRUCTIONS.strip()}\n{BLOCK_END}"
+
+
+def find_block(text):
+    """The (start, end) of this tool's block in text, or None."""
+    start = text.find(BLOCK_START)
+    end = text.find(BLOCK_END, start)
+    return (start, end + len(BLOCK_END)) if start >= 0 and end >= 0 else None
+
+
+def read_claude_md():
+    return CLAUDE_MD.read_text(encoding="utf-8") if CLAUDE_MD.exists() else ""
+
+
+def ask_instructions():
+    """Shows the block and asks whether to add it. Returns True or False, or None
+    when there's no terminal to ask in."""
+    if not sys.stdin.isatty():
+        return None
+    print(f"\n{TOOL_NAME} can add these lines to {CLAUDE_MD}, which every Claude Code session loads:\n")
+    print("    " + INSTRUCTIONS.strip().replace("\n", "\n    "))
+    return input("\nAdd them? [Y/n] ").strip().lower() not in ("n", "no")
+
+
+def write_claude_md(text):
+    if CLAUDE_MD.exists():
+        backup(CLAUDE_MD)
+    CLAUDE_MD.parent.mkdir(parents=True, exist_ok=True)
+    CLAUDE_MD.write_text(text, encoding="utf-8")
+
+
+def drop_block(text, span):
+    before, after = text[:span[0]].rstrip("\n"), text[span[1]:].lstrip("\n")
+    return before + ("\n\n" if before and after else "\n" if before else "") + after
+
+
+def update_instructions(choice, old_record):
+    """Adds, refreshes or takes out the block as choice says (None: keep what's
+    there). Returns whether the block is in CLAUDE.md, and whether the tool's
+    installs created CLAUDE.md."""
+    created = bool(old_record and old_record.get("claude_md_created"))
+    if not INSTRUCTIONS:
+        return False, created
+    text = read_claude_md()
+    span = find_block(text)
+    if choice is False:
+        if span:
+            write_claude_md(drop_block(text, span))
+            print(f"took this tool's lines out of {CLAUDE_MD} (--no-instructions)")
+        return False, created
+    if span:
+        if text[span[0]:span[1]] == instructions_block():
+            print(f"ok: this tool's lines are already in {CLAUDE_MD}")
+        else:
+            write_claude_md(text[:span[0]] + instructions_block() + text[span[1]:])
+            print(f"updated this tool's lines in {CLAUDE_MD}")
+        return True, created
+    if choice is None:
+        print(f"left this tool's lines out of {CLAUDE_MD}, since there was no terminal to ask in. "
+              "To add them, rerun with --instructions.")
+        return False, created
+    created = created or not CLAUDE_MD.exists()
+    write_claude_md(text.rstrip("\n") + ("\n\n" if text.strip() else "") + instructions_block() + "\n")
+    print(f"added this tool's lines to {CLAUDE_MD}")
+    return True, created
+
+
+def remove_instructions(claude_md_created):
+    text = read_claude_md()
+    span = find_block(text)
+    if not span:
+        return
+    text = drop_block(text, span)
+    if claude_md_created and not text.strip():
+        CLAUDE_MD.unlink()
+        print(f"removed {CLAUDE_MD}: the install created it, and it's empty now")
+    else:
+        write_claude_md(text)
+        print(f"took this tool's lines out of {CLAUDE_MD}")
+
+
+# --- 8. Install record -----------------------------------------------------
 
 def read_record():
     if not RECORD_FILE.exists():
@@ -478,7 +783,7 @@ def read_record():
     return record
 
 
-def write_record(mode, files, settings_created):
+def write_record(mode, files, settings_created, startup, instructions, claude_md_created):
     record = {
         "format": RECORD_FORMAT,
         "tool": TOOL_NAME,
@@ -487,13 +792,25 @@ def write_record(mode, files, settings_created):
         "files": files,
         "hooks": hook_entries(),
         "settings_created": settings_created,
+        "startup": startup,
+        "instructions": instructions,
+        "claude_md_created": claude_md_created,
     }
     RECORD_FILE.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
 
 
+# --- 9. Steps for the person -----------------------------------------------
+
+def print_human_steps():
+    if HUMAN_STEPS:
+        print("\nStill to do yourself, one at a time:")
+        for n, text in enumerate(HUMAN_STEPS, 1):
+            print(f"  {n}. {text}")
+
+
 # --- Install and remove ----------------------------------------------------
 
-def install(mode):
+def install(mode, instructions=None):
     if not is_link(STABLE_DIR) and same_path(os.path.realpath(STABLE_DIR), TOOL_DIR):
         fail(f"this is the installed copy at {STABLE_DIR}. Run install.py from the tool's own "
              "folder (a clone or an unzipped release) instead. To uninstall, run it here with --remove.")
@@ -503,6 +820,8 @@ def install(mode):
         load_settings()  # stop before changing anything if settings.json is broken
     if old and not same_path(old.get("source", ""), TOOL_DIR):
         print(f"moving the install from {old.get('source')} to {TOOL_DIR}")
+    if STARTUP or (old and old.get("startup")):
+        stop_processes()  # a running copy would keep its files and folder in use
 
     mode = install_stable_dir(mode)
     old_files = {f["path"]: f for f in (old or {}).get("files", [])}
@@ -519,25 +838,34 @@ def install(mode):
             remove_file(path, old_file["from"], old.get("source"), old_file.get("dirs", []))
     settings_created = update_hooks(old)
     create_config()
-    write_record(mode, files, settings_created)
+    startup = install_startup(old)
+    in_claude_md, claude_md_created = update_instructions(instructions, old)
+    write_record(mode, files, settings_created, startup, in_claude_md, claude_md_created)
     print(f"\nSetup complete. Start a new Claude Code session to use {TOOL_NAME}.")
     if mode == "copy":
         print(f"The tool was copied to {STABLE_DIR}, so this folder can be deleted.")
+    print_human_steps()
 
 
 def remove():
     os.chdir(Path.home())  # so this script's own folder can be deleted if it's the installed copy
     record = read_record()
+    if STARTUP or (record and record.get("startup")):
+        stop_processes()
     if record:
         for f in record.get("files", []):
             remove_file(f["path"], f["from"], record.get("source"), f.get("dirs", []))
         remove_hooks([(h["event"], h["command"]) for h in record.get("hooks", [])],
                      record.get("settings_created"))
+        remove_startup(record.get("startup", []))
     else:
         # An install from before the install record.
         for rel_src, rel_dst in FILES.items():
             remove_file(rel_dst, rel_src)
         remove_hooks(legacy_hooks() + [(h["event"], h["command"]) for h in hook_entries()], False)
+        if os.name == "nt":
+            remove_startup(startup_dir() / f"{name}.lnk" for name, _script, _arguments in STARTUP)
+    remove_instructions(bool(record and record.get("claude_md_created")))
     remove_stable_dir()
     if RECORD_FILE.exists():
         RECORD_FILE.unlink()
@@ -559,12 +887,26 @@ def main():
                         help="link ~/.claude/tools to this folder, even outside a git clone")
     action.add_argument("--remove", action="store_const", const="remove", dest="action",
                         help="undo everything the install added")
+    if INSTRUCTIONS:
+        choice = p.add_mutually_exclusive_group()
+        choice.add_argument("--instructions", action="store_const", const=True, dest="instructions",
+                            help=f"add the tool's lines to {CLAUDE_MD} without asking")
+        choice.add_argument("--no-instructions", action="store_const", const=False, dest="instructions",
+                            help=f"leave the tool's lines out of {CLAUDE_MD}, or take them out")
     args = p.parse_args()
+    if os.environ.get(OUTSIDE_PACKAGE):  # the rerun outside the app's package: its output goes back through a file
+        sys.stdout = sys.stderr = open(os.environ[OUTSIDE_PACKAGE], "w", encoding="utf-8", buffering=1)
+    instructions = getattr(args, "instructions", None)
+    if args.action != "remove" and INSTRUCTIONS and instructions is None and not find_block(read_claude_md()):
+        instructions = ask_instructions()  # asked here, since the rerun below has no terminal
 
+    if (STARTUP or NEEDS_REAL_APPDATA) and in_app_package():
+        rerun_outside_app_package([f"--{args.action}"] * bool(args.action)
+                                  + {True: ["--instructions"], False: ["--no-instructions"]}.get(instructions, []))
     if args.action == "remove":
         remove()
     else:
-        install(args.action or ("link" if in_git_clone() else "copy"))
+        install(args.action or ("link" if in_git_clone() else "copy"), instructions)
 
 
 if __name__ == "__main__":

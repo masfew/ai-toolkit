@@ -30,8 +30,6 @@ so prices seem to go up by half each tier
 This should have let me buy it. I had 800 coins That looks like a bug
 ```
 
-> **Setting this up?** Open Claude Code and say: *"Set up the tool in `<path to this folder>`. Follow its README."* Claude: follow [Install](#install) from top to bottom, then report what happened.
-
 ## Requirements
 
 - Claude Code (the desktop app or the terminal CLI)
@@ -54,9 +52,26 @@ python install.py
 
 It ends with **Setup complete**. Then give Claude a recording, as in [Usage](#usage).
 
+## Install with Claude Code
+
+Say to Claude Code: *"Clone https://github.com/masfew/toolbox and install video-narration-capture."* With a clone already there, open Claude Code in it and say *"Install video-narration-capture."* Claude follows the repo's install rules: it does the steps under Claude does, and reads out the steps under You do one at a time, waiting for each.
+
+**Claude does:**
+
+1. Checks Python 3.9 or newer is installed, and asks before installing it if it's missing, with the command from [Install](#install) step 2.
+2. Tells you what the installer adds to your machine (ffmpeg if it's missing, two Python packages, and a speech model of about 500 MB), and runs it once you agree.
+3. Runs `python install.py` from `skills/video-narration-capture`, and checks it ends with **Setup complete**. This takes a few minutes, mostly the model download.
+4. Checks Claude Code lists the `video-narration-capture` skill.
+
+**You do:**
+
+1. Linux only, before Claude runs the installer: install ffmpeg with your package manager, for example `sudo apt install ffmpeg`, since it asks for your password.
+2. Approve the ffmpeg install if winget or Homebrew asks you to.
+3. If Claude Code doesn't list the skill, restart Claude Code.
+
 ## Install
 
-Everything below can be done by Claude Code on its own. You only need to approve the installs.
+Everything below can be done by Claude Code on its own, apart from what [Install with Claude Code](#install-with-claude-code) lists under You do.
 
 1. **Get the folder.** Either clone the repo (`git clone https://github.com/masfew/toolbox.git`), or download `video-narration-capture-v<version>.zip` from the [releases page](https://github.com/masfew/toolbox/releases) and unzip it.
 

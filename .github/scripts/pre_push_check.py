@@ -19,7 +19,9 @@ The five checks:
    .github/scripts/public-repo-identifiers.example.txt to start it), matched without
    regard to case. A few kinds of hit are allowed (ALLOWED below lists them),
    such as links to this repo on GitHub, the copyright line in LICENSE,
-   GitHub Actions pinned to a commit SHA, and noreply addresses.
+   GitHub Actions pinned to a commit SHA, noreply addresses, and the at sign
+   in common code (CSS at-rules, PowerShell here-strings, Python decorators,
+   npm package scopes) where it can't be part of an email address.
 3. Every commit's author and committer email is a GitHub noreply address
    (ending in @users.noreply.github.com).
 4. No two tool folders share a name, and each name is lowercase words joined
@@ -57,6 +59,7 @@ unchecked.
 """
 import argparse
 import ast
+import fnmatch
 import glob
 import importlib.util
 import os
@@ -77,9 +80,16 @@ TEMPLATE_INSTALLER = ".github/template/install.py"
 # The comment that says why a tool's installer function differs from the template's.
 DIFFERS = re.compile(r"^\s*#\s*differs from the template:(.*)$")
 
-# Text an identifier may appear inside: (only in this file, or None for any
-# file, commit message or ref name; pattern). A hit is allowed when it lies
-# wholly inside a match of one of these.
+# Text an identifier may appear inside: (only in files whose path matches this
+# glob, or None for any file, commit message or ref name; pattern). A hit is
+# allowed when it lies wholly inside a match of one of these.
+#
+# The rules for code symbols, from CSS at-rules on, match only the at sign or
+# the one word they allow, with the text around it as lookarounds, so a match
+# never covers another identifier next to it. Each at sign they allow follows
+# a space or punctuation, never a letter, digit or dot (START), so no rule
+# lets an email address through.
+START = r"(?<![\w.+-])\x40"
 ALLOWED = [
     # Links to this repo on GitHub, which hold its owner's username.
     (None, re.compile(r"github\.com/[\w.-]+/toolbox\b[\w./#?=&%-]*", re.I)),
@@ -98,6 +108,32 @@ ALLOWED = [
     (None, re.compile(r"[\w.+-]*\x40example\.(?:com|org|net)\b", re.I)),
     # A shell script passing on its arguments.
     (None, re.compile(r'"\$\x40"')),
+    # CSS at-rules, in stylesheets and in code that writes or checks CSS.
+    (None, re.compile(START + r"(?=(?:media|font-face|import|keyframes|supports)(?![\w.-]))", re.I)),
+    # Font weights in a Google Fonts stylesheet link (family=Name:wght\x40400;600).
+    (None, re.compile(r"(?<=:wght)\x40(?=\d)|(?<=:ital,wght)\x40(?=\d)", re.I)),
+    # Telegram's bot for making bots, which setup steps send people to.
+    (None, re.compile(START + r"(?=BotFather(?![\w.-]))")),
+    # CLAUDE.md import lines for an installed tool's files, which name no user.
+    (None, re.compile(START + r"(?=~/\.claude/tools/)")),
+    # npm package scopes (\x40scope/package), in package files and imports.
+    (None, re.compile(START + r"(?=[a-z0-9~-][a-z0-9._~-]*/[a-z0-9._~-])")),
+    # Verse's \x40editable attribute, in docs and code about UEFN devices.
+    (None, re.compile(START + r"(?=editable\b)")),
+    # Plastic SCM's placeholders in diff and merge tool commands (\x40sourcefile).
+    (None, re.compile(START + r"(?=(?:(?:base|source|destination)(?:file|symbolic|hash)|output)\b)")),
+    # High-resolution image names (icon\x402x.png).
+    (None, re.compile(r"(?<=\w)\x40(?=[1-4]x\.(?:png|jpe?g|webp|svg|ico)(?![\w.-]))", re.I)),
+    # PowerShell here-strings, arrays and hash tables, in PowerShell files only.
+    ("*.ps1", re.compile(START + r"(?=['\"({])|^['\"]\x40")),
+    ("*.psm1", re.compile(START + r"(?=['\"({])|^['\"]\x40")),
+    # Python decorators, at the start of a line in Python files only.
+    ("*.py", re.compile(r"^\s*\x40(?=[A-Za-z_][\w.]*\s*(?:\(|$))")),
+    # C# verbatim strings and identifiers (\x40"C:\x", $\x40"{x}", \x40base), in C# files only.
+    ("*.cs", re.compile(r"(?<![\w.+-])\$?\x40(?=[A-Za-z_\"])")),
+    # The word "documents" on its own, not a folder in a path. ([o] keeps the
+    # pattern itself from matching the identifier it allows.)
+    (None, re.compile(r"(?<![\\/])\bd[o]cuments\b(?![\\/])", re.I)),
 ]
 
 
@@ -165,7 +201,8 @@ class Report:
 
     def search(self, where, text, path=None):
         """Reports each identifier in one line of text that no allow rule covers."""
-        allowed = [m.span() for only, rule in ALLOWED if only in (None, path) for m in rule.finditer(text)]
+        allowed = [m.span() for only, rule in ALLOWED
+                   if only is None or (path and fnmatch.fnmatch(path, only)) for m in rule.finditer(text)]
         for term, pattern in self.terms:
             for m in pattern.finditer(text):
                 if not any(a <= m.start() and m.end() <= b for a, b in allowed):

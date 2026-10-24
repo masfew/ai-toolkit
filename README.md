@@ -34,6 +34,21 @@ To share a tool, link to its row in the Tools tables above: `https://github.com/
 
 Prefer the row link to a link to the tool's folder. The row link and the release names use only the tool's name, so they keep working if a tool's folder ever moves.
 
+## Installing with Claude Code
+
+Claude Code can install any tool here for you. Open it in the folder you want the clone in and say, with the tool's name from the Tools tables:
+
+> Clone https://github.com/masfew/toolbox and install get-to-the-point.
+
+Claude clones the repo, finds the tool's row and its README, and installs it. Every tool's README has an **Install with Claude Code** section with two lists:
+
+- **Claude does:** the steps Claude runs itself, such as running the installer and checking it worked. Before installing any program outside the clone (Python, ffmpeg, a toolchain), it tells you the exact command and waits for your yes.
+- **You do:** the steps only you can do, such as typing a token into the installer's hidden prompt, creating an account or clicking in another app. Claude reads them out one at a time and waits for you to finish each.
+
+Claude never asks you for a token, password or key in the chat. A tool that needs one has its installer ask for it in your own terminal, so it never passes through the chat.
+
+The same rules are in the repo's [`CLAUDE.md`](CLAUDE.md), which Claude Code reads when it works in the clone. To install a tool yourself instead, follow [Installing a Tool](#installing-a-tool).
+
 ## Installing a Tool
 
 You need [Claude Code](https://claude.com/claude-code), [Git](https://git-scm.com/) and [Python](https://www.python.org/downloads/) 3.9 or newer. Some tools need more, and their README says so.
@@ -130,6 +145,7 @@ The release workflow then checks the tag against the README again, and makes the
 | Path | What it holds |
 |---|---|
 | `<kind>/<tool>/` | One folder per tool, inside the folder for its kind (`skills/`, `output-styles/`, `mods/`, `hooks/`, `instructions/` or `apps/`), with its own README, `install.py` and `config.example.json` where it needs one. A tool that is more than one kind sits where its main part belongs: a skill that comes with a hook is in `skills/`. Link to a tool as [Linking to a Tool](#linking-to-a-tool) says |
+| `CLAUDE.md` | The rules Claude Code follows when it installs, updates or removes a tool from the clone (see [Installing with Claude Code](#installing-with-claude-code)) |
 | `.github/template/` | The starting point for a new tool |
 | `.claude-plugin/marketplace.json` | Makes the repo the `toolbox` plugin marketplace, listing each mod and its folder in `mods/`. A mod's folder moving means changing its `source` here |
 | `.github/workflows/secret-scan.yml` | Scans every push for secrets with [gitleaks](https://github.com/gitleaks/gitleaks), and checks that no two tool folders share a name |

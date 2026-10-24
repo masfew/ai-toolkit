@@ -30,6 +30,23 @@ cd <kind>/<tool-name>
 python install.py
 ```
 
+## Install with Claude Code
+
+Say to Claude Code: *"Clone https://github.com/masfew/toolbox and install <tool-name>."* With a clone already there, open Claude Code in it and say *"Install <tool-name>."* Claude follows the repo's install rules: it does the steps under Claude does, and reads out the steps under You do one at a time, waiting for each.
+
+<!-- Write both lists so a fresh Claude session can install the tool from them and Install below, with no other help. Claude does: every step a session can run and check. Programs outside the clone are asked about first, with the exact command. You do: only what needs the person (a secret typed into a hidden prompt, an account, a click in another app, a password for sudo or an admin prompt), each with where to do it. -->
+
+**Claude does:**
+
+1. Checks the [requirements](#requirements), and asks before installing anything missing, with the exact command from [Install](#install).
+2. <Tells you anything the install changes that you'd notice, before running it.>
+3. Runs `python install.py` from `<kind>/<tool-name>`, and checks it ends with **Setup complete**.
+
+**You do:**
+
+1. <Each step only you can do, or "Nothing during the install.">
+2. Start a new Claude Code session.
+
 ## Install
 
 1. <Install anything from Requirements that's missing, and how.>
@@ -37,6 +54,9 @@ python install.py
    - puts the tool at `~/.claude/tools/<tool-name>`. In a git clone that's a link to this folder (a directory junction on Windows, which needs no admin rights; a symlink on macOS and Linux), so a `git pull` updates the tool. From an unzipped release it's a copy, and the unzipped folder can be deleted afterwards. `--copy` or `--link` overrides the choice.
    - <links which files under `~/.claude/tools/<tool-name>` to which places under `~/.claude`>
    - <adds which entries to `~/.claude/settings.json`, after backing it up>
+   - <Windows, if the tool has background programs: adds which Startup shortcuts, which run them at sign-in through `~/.claude/tools/<tool-name>`, and starts them now. On a rerun it stops the running ones first.>
+   - <if the tool has CLAUDE.md lines: shows the lines it would add to `~/.claude/CLAUDE.md`, between two marker lines, and asks first. `--instructions` or `--no-instructions` answers ahead of time; with no terminal to ask in, it leaves them out and says how to add them.>
+   - <on Windows, when the Claude desktop app runs the install and the tool writes under AppData, it reruns itself outside the app's package, so its changes reach the real folders. It says so when it does.>
    - creates `~/.claude/<tool-name>.json` from `config.example.json` if you don't have one yet
    - saves what it installed to `~/.claude/tools/<tool-name>.install.json`
 3. <Edit the config file, if the tool has one.>
