@@ -6,33 +6,33 @@ Each tool lives in its own folder, works on its own, and has a README that cover
 
 ## Tools
 
-The tools are grouped by kind: skills, hooks, output styles and so on.
+The tools are grouped by kind, and each kind has its own folder in the repo: `skills/`, `output-styles/`, `mods/`, `hooks/`, `instructions/` and `apps/`. A folder is only there once it holds a tool.
 
 ### Skills
 
 | Tool | What it does | Tested on |
 |---|---|---|
-| <a id="video-narration-capture"></a>[video-narration-capture](video-narration-capture/) | Skill that turns a narrated screen or gameplay recording into key frames, a timestamped transcript and a written breakdown (game teardown, software walkthrough or bug report) that agents can work from | Windows 11 (macOS and Linux untested) |
+| <a id="video-narration-capture"></a>[video-narration-capture](skills/video-narration-capture/) | Skill that turns a narrated screen or gameplay recording into key frames, a timestamped transcript and a written breakdown (game teardown, software walkthrough or bug report) that agents can work from | Windows 11 (macOS and Linux untested) |
 
 ### Output Styles
 
 | Tool | What it does | Tested on |
 |---|---|---|
-| <a id="get-to-the-point"></a>[get-to-the-point](get-to-the-point/) | Output style that makes every reply quick to read: what matters first, plain words, no play-by-play, technical depth only when it helps, and numbered rules you can point a reply at ("point 13"). Built for running several sessions side by side | Windows 11 (macOS and Linux untested) |
+| <a id="get-to-the-point"></a>[get-to-the-point](output-styles/get-to-the-point/) | Output style that makes every reply quick to read: what matters first, plain words, no play-by-play, technical depth only when it helps, and numbered rules you can point a reply at ("point 13"). Built for running several sessions side by side | Windows 11 (macOS and Linux untested) |
 
-### Claude Code Mods
+### Mods
 
 Mods are Claude Code plugins that change Claude Code's own interface or behaviour. They install with one command and no clone, as [Installing a Mod](#installing-a-mod) says.
 
 | Tool | What it does | Tested on |
 |---|---|---|
-| <a id="usage-rings"></a>[usage-rings](usage-rings/) | Ring gauges next to the prompt box for context, 5-hour and 7-day usage, blue, then orange from 70% and red from 90%: above the box in the desktop app, as text bars under it in the terminal | Windows 11 (macOS and Linux untested) |
+| <a id="usage-rings"></a>[usage-rings](mods/usage-rings/) | Ring gauges next to the prompt box for context, 5-hour and 7-day usage, blue, then orange from 70% and red from 90%: above the box in the desktop app, as text bars under it in the terminal | Windows 11 (macOS and Linux untested) |
 
 ## Linking to a Tool
 
 To share a tool, link to its row in the Tools tables above: `https://github.com/masfew/toolbox#<tool>`, for example [`https://github.com/masfew/toolbox#video-narration-capture`](https://github.com/masfew/toolbox#video-narration-capture). To share a version you can download, link to the [releases page](https://github.com/masfew/toolbox/releases).
 
-Don't link to a tool's folder. The folders may move into category folders later, and a folder link would then break. The row link and the release names stay the same wherever the folder goes.
+Prefer the row link to a link to the tool's folder. The row link and the release names use only the tool's name, so they keep working if a tool's folder ever moves.
 
 ## Installing a Tool
 
@@ -60,7 +60,7 @@ You need [Claude Code](https://claude.com/claude-code), [Git](https://git-scm.co
 
 ### Installing a Mod
 
-The repo is also a Claude Code plugin marketplace named `toolbox`, listing the [Claude Code Mods](#claude-code-mods). A mod installs without a clone, with one command in a terminal (PowerShell or bash):
+The repo is also a Claude Code plugin marketplace named `toolbox`, listing the [Mods](#mods). A mod installs without a clone, with one command in a terminal (PowerShell or bash):
 
 ```bash
 claude plugin install <mod> --marketplace masfew/toolbox
@@ -129,16 +129,16 @@ The release workflow then checks the tag against the README again, and makes the
 
 | Path | What it holds |
 |---|---|
-| `<tool>/` | One folder per tool, with its own README, `install.py` and `config.example.json` where it needs one. The tool folders are at the root today and may move into category folders later, so link to a tool as [Linking to a Tool](#linking-to-a-tool) says |
-| `_template/` | The starting point for a new tool |
-| `.claude-plugin/marketplace.json` | Makes the repo the `toolbox` plugin marketplace, listing each Claude Code mod and its folder. A mod's folder moving means changing its `source` here |
+| `<kind>/<tool>/` | One folder per tool, inside the folder for its kind (`skills/`, `output-styles/`, `mods/`, `hooks/`, `instructions/` or `apps/`), with its own README, `install.py` and `config.example.json` where it needs one. A tool that is more than one kind sits where its main part belongs: a skill that comes with a hook is in `skills/`. Link to a tool as [Linking to a Tool](#linking-to-a-tool) says |
+| `.github/template/` | The starting point for a new tool |
+| `.claude-plugin/marketplace.json` | Makes the repo the `toolbox` plugin marketplace, listing each mod and its folder in `mods/`. A mod's folder moving means changing its `source` here |
 | `.github/workflows/secret-scan.yml` | Scans every push for secrets with [gitleaks](https://github.com/gitleaks/gitleaks), and checks that no two tool folders share a name |
 | `.github/workflows/release.yml` | Turns each pushed `<tool>-v<version>` tag into a GitHub release |
 | `.github/scripts/release_notes.py` | Finds a release tag's tool folder at any depth, checks the tag against the tool's README, and writes the release's notes and zip. `--check-names` checks that tool folder names are unique |
-| `scripts/pre_push_check.py` | Checks a push for secrets, personal identifiers, non-noreply commit emails, clashing tool folder names and tool installers that drift from `_template/install.py` (see [Before You Push](#before-you-push)) |
-| `scripts/public-repo-identifiers.example.txt` | A starting point for the identifier list the check reads |
-| `.githooks/pre-push` | The git hook that runs the check before every push, once turned on |
-| `.githooks/pre-commit` | The git hook that runs the check on the working tree before every commit, once turned on |
+| `.github/scripts/pre_push_check.py` | Checks a push for secrets, personal identifiers, non-noreply commit emails, clashing tool folder names and tool installers that drift from `.github/template/install.py` (see [Before You Push](#before-you-push)) |
+| `.github/scripts/public-repo-identifiers.example.txt` | A starting point for the identifier list the check reads |
+| `.github/hooks/pre-push` | The git hook that runs the check before every push, once turned on |
+| `.github/hooks/pre-commit` | The git hook that runs the check on the working tree before every commit, once turned on |
 
 ## Personal Settings
 
@@ -153,20 +153,20 @@ Issues and pull requests are turned off, since this is a personal toolbox. You'r
 If you push from your own clone or fork, you can turn on the checks this repo uses. Before every `git commit`, the pre-commit hook checks the working tree and stops the commit if it finds a problem, so nothing has to be rewritten later. Before every `git push`, the pre-push hook stops the push if the commits being pushed hold a secret (found by [gitleaks](https://github.com/gitleaks/gitleaks)), one of your own identifiers, or an author or committer email that isn't a [GitHub noreply address](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-email-preferences/setting-your-commit-email-address). It's optional.
 
 1. Install gitleaks, for example with `winget install Gitleaks.Gitleaks` on Windows or `brew install gitleaks` on macOS.
-2. Copy `scripts/public-repo-identifiers.example.txt` to `~/.claude/public-repo-identifiers.txt` and replace its examples with your own: your username, real name, email addresses, private project names and anything else that mustn't be published. Keep it outside the repo.
+2. Copy `.github/scripts/public-repo-identifiers.example.txt` to `~/.claude/public-repo-identifiers.txt` and replace its examples with your own: your username, real name, email addresses, private project names and anything else that mustn't be published. Keep it outside the repo.
 3. Turn on both hooks once in your clone, from its root (PowerShell or bash):
 
    ```bash
-   git config core.hooksPath .githooks
+   git config core.hooksPath .github/hooks
    ```
 
 To run the same check by hand on the working tree, from the root of the repo (PowerShell or bash):
 
 ```bash
-python scripts/pre_push_check.py
+python .github/scripts/pre_push_check.py
 ```
 
-Both hooks and the hand-run check also compare each tool's `install.py` with `_template/install.py`, function by function, and stop on a function that differs, so a fix made in one copy reaches the others. A tool that needs a function to work differently says why with a `# differs from _template: <reason>` line right under its `def`. The top of `_template/install.py` has the details.
+Both hooks and the hand-run check also compare each tool's `install.py` with `.github/template/install.py`, function by function, and stop on a function that differs, so a fix made in one copy reaches the others. A tool that needs a function to work differently says why with a `# differs from the template: <reason>` line right under its `def`. The top of `.github/template/install.py` has the details.
 
 The check stops the commit or push, rather than letting it through, if gitleaks or the identifier list is missing. It only finds the identifiers on your list, so it doesn't replace reading your own diff before you push.
 

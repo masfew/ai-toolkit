@@ -1,8 +1,8 @@
 #!/bin/sh
-# Runs scripts/pre_push_check.py before every push, and stops the push if it
+# Runs .github/scripts/pre_push_check.py before every push, and stops the push if it
 # finds a secret, one of your identifiers, or a commit email that isn't a
 # GitHub noreply address. Turn it on once per clone, from the root of the repo:
-#   git config core.hooksPath .githooks
+#   git config core.hooksPath .github/hooks
 # Git passes the remote's name and URL as arguments, and the branches and tags
 # being pushed on standard input. The script reads both.
 
@@ -10,7 +10,7 @@ root=$(git rev-parse --show-toplevel) || exit 1
 for py in python3 python; do
   # Skip a "python3" that is only Windows' shortcut to the Microsoft Store.
   if command -v "$py" >/dev/null 2>&1 && "$py" -c "" </dev/null >/dev/null 2>&1; then
-    exec "$py" "$root/scripts/pre_push_check.py" "$@"
+    exec "$py" "$root/.github/scripts/pre_push_check.py" "$@"
   fi
 done
 echo "pre-push: Python 3 wasn't found, so the pre-push check couldn't run. Nothing was pushed." >&2

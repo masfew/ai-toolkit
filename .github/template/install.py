@@ -9,17 +9,17 @@ Installs <tool-name> for Claude Code. Safe to rerun.
 
 Starting a new tool from this template: set TOOL_NAME, and fill in FILES,
 HOOKS and PROGRAMS or leave them empty. Delete whole functions the tool doesn't
-use, but keep the ones it uses as they are here. scripts/pre_push_check.py
+use, but keep the ones it uses as they are here. .github/scripts/pre_push_check.py
 compares every function a tool's install.py shares with this file, and fails
 on one that differs, so a fix made in one copy reaches the others. When a tool
 needs a function to work differently, add this line right under its def
 (above any docstring), with the reason:
 
-    # differs from _template: <reason>
+    # differs from the template: <reason>
 
 When changing a function here, make the same change in every tool that has
 it. The check lists each tool that doesn't, but not the copies marked as
-differing: search the tools for "differs from _template" to find those.
+differing: search the tools for "differs from the template" to find those.
 
 What it does:
 1. Checks that Python and every program in PROGRAMS are installed, and says

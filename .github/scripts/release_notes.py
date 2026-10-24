@@ -11,8 +11,8 @@ will hold. From the root of the repo:
 What it checks:
 1. The tag is named <tool>-v<MAJOR.MINOR.PATCH>, for example example-tool-v1.2.0.
 2. Exactly one tool folder is named <tool>. A tool folder is any folder
-   holding both a README.md and an install.py, outside .github, scripts and
-   _template, at any depth: example-tool/ and category/example-tool/ both count.
+   holding both a README.md and an install.py, outside .github (which holds
+   the template), at any depth: skills/example-tool/ and example-tool/ both count.
 3. The README's version line ("Version X.Y.Z.") matches the tag.
 4. The README's Changes section has an entry for that version
    ("- X.Y.Z: what changed"). A tool that keeps a CHANGELOG.md instead can
@@ -32,7 +32,7 @@ tool's name, wherever the folder sits in the repo.
 checks every tool folder at --ref instead: that no two share a name, and that
 each name is lowercase words joined by hyphens, since release tags, zips and
 install paths use only the name. The secret-scan workflow runs it on every
-push, and scripts/pre_push_check.py runs the same check before every commit
+push, and .github/scripts/pre_push_check.py runs the same check before every commit
 and push.
 
 In GitHub Actions it also writes tool=<tool> and version=<X.Y.Z> to the step's
@@ -54,9 +54,9 @@ TOOL_NAME = re.compile(rf"^{NAME}$")
 TAG = re.compile(rf"^(?P<tool>{NAME})-v(?P<version>\d+\.\d+\.\d+)$")
 VERSION_LINE = re.compile(r"^Version v?(\d+\.\d+\.\d+)\b", re.M)
 HEADING = re.compile(r"^(#+)\s")
-# Folders at the root of the repo that never hold tools: the repo's own
-# workflows and scripts, and the template new tools start from.
-NOT_TOOLS = {".git", ".github", "scripts", "_template"}
+# Folders at the root of the repo that never hold tools: git's own, and the
+# repo's workflows, hooks, scripts and the template new tools start from.
+NOT_TOOLS = {".git", ".github"}
 
 
 def fail(msg):

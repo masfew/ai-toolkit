@@ -1,6 +1,6 @@
 <!--
 Starting a new tool:
-1. Copy this folder to a new folder named after the tool (lowercase, hyphens).
+1. Copy this folder to a new folder named after the tool (lowercase, hyphens), inside the folder for its kind at the root of the repo: skills/, output-styles/, mods/, hooks/, instructions/ or apps/ (make the kind folder if it isn't there yet). A tool that is more than one kind goes where its main part belongs: a skill that comes with a hook goes in skills/, a hook with background helpers in hooks/.
 2. Replace every <placeholder> and the guidance under each heading. Keep every heading.
 3. Set TOOL_NAME, FILES, HOOKS and PROGRAMS in install.py, and delete config.example.json if the tool has no settings. Keep the install.py functions the tool uses as they are, or mark why one differs, as the top of install.py explains.
 4. Add the tool's row to the root README's Tools section, in the table under the heading for its kind of tool (such as "Skills"; add a heading with its own table if none fits), starting with <a id="<tool-name>"></a> so that https://github.com/masfew/toolbox#<tool-name> links to the row. The name must not match a heading in the root README (such as "updating").
@@ -26,7 +26,7 @@ Two sentences: what the tool does and who it's for. Then a screenshot, a GIF or 
 The shortest path to a working install, from the root of the cloned repo (PowerShell or bash):
 
 ```bash
-cd <tool-name>
+cd <kind>/<tool-name>
 python install.py
 ```
 
@@ -70,7 +70,7 @@ From the root of the cloned repo, pull the new version, then rerun the install (
 
 ```bash
 git pull
-cd <tool-name>
+cd <kind>/<tool-name>
 python install.py
 ```
 
@@ -79,7 +79,7 @@ To stay on a version, check out its tag instead, then rerun the install (PowerSh
 ```bash
 git fetch --tags
 git checkout <tool-name>-v<0.1.0>
-cd <tool-name>
+cd <kind>/<tool-name>
 python install.py
 ```
 

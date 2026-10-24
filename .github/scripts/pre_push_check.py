@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """
 Checks what's about to be pushed for secrets and personal information, and
-stops the push if it finds any. The repo's pre-push hook (.githooks/pre-push)
-runs it before every `git push`, and its pre-commit hook (.githooks/pre-commit)
+stops the push if it finds any. The repo's pre-push hook (.github/hooks/pre-push)
+runs it before every `git push`, and its pre-commit hook (.github/hooks/pre-commit)
 runs it on the working tree before every `git commit`. Turn both hooks on once
 per clone, from the root of the repo:
 
-    git config core.hooksPath .githooks
+    git config core.hooksPath .github/hooks
 
 Run it by hand from the root of the repo to check the working tree:
 
-    python scripts/pre_push_check.py
+    python .github/scripts/pre_push_check.py
 
 The five checks:
 1. gitleaks looks for secrets: tokens, API keys, passwords, private keys.
 2. The identifier search looks for your own identifiers, listed one fixed
    string per line in ~/.claude/public-repo-identifiers.txt (copy
-   scripts/public-repo-identifiers.example.txt to start it), matched without
+   .github/scripts/public-repo-identifiers.example.txt to start it), matched without
    regard to case. A few kinds of hit are allowed (ALLOWED below lists them),
    such as links to this repo on GitHub, the copyright line in LICENSE,
    GitHub Actions pinned to a commit SHA, and noreply addresses.
@@ -26,11 +26,11 @@ The five checks:
    by hyphens. This is the check `.github/scripts/release_notes.py
    --check-names` runs, using that script's rule for what a tool folder is.
 5. Each tool's install.py keeps the functions it shares with
-   _template/install.py as they are there, so a fix made in one copy reaches
+   .github/template/install.py as they are there, so a fix made in one copy reaches
    the others. Every top-level function both files define is compared as
    text, docstring and comments included. One that differs is a finding
    unless the tool's copy says why, with a comment line
-   `# differs from _template: <reason>` between its def line and its first
+   `# differs from the template: <reason>` between its def line and its first
    statement (so above any docstring). A marked function that matches the
    template again is a finding too, so the marker gets deleted. Functions
    only one of the two files has are ignored.
@@ -66,16 +66,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
 IDENTIFIERS = Path.home() / ".claude" / "public-repo-identifiers.txt"
-EXAMPLE = "scripts/public-repo-identifiers.example.txt"
+EXAMPLE = ".github/scripts/public-repo-identifiers.example.txt"
 ZERO_SHA = re.compile(r"^0+$")
 AS_HOOK = False  # set when git runs the script as the pre-push hook
 # The at sign is written as \x40 in this file, so it passes its own search.
 NOREPLY = re.compile(r"\x40users\.noreply\.github\.com$", re.I)
-TEMPLATE_INSTALLER = "_template/install.py"
+TEMPLATE_INSTALLER = ".github/template/install.py"
 # The comment that says why a tool's installer function differs from the template's.
-DIFFERS = re.compile(r"^\s*#\s*differs from _template:(.*)$")
+DIFFERS = re.compile(r"^\s*#\s*differs from the template:(.*)$")
 
 # Text an identifier may appear inside: (only in this file, or None for any
 # file, commit message or ref name; pattern). A hit is allowed when it lies
@@ -228,7 +228,7 @@ def installer_functions(text, path):
 
 
 def check_installers(report, paths, read, ref=None):
-    """Functions in each tool's install.py that differ from _template/install.py's
+    """Functions in each tool's install.py that differ from .github/template/install.py's
     and don't say why. paths are repo-relative file paths; read(path) gives a file's text."""
     if TEMPLATE_INSTALLER not in paths:
         return
@@ -256,14 +256,14 @@ def check_installers(report, paths, read, ref=None):
                 report.add("installers", f"{where}{path}:{line}",
                            f"{name}() differs from the one in {TEMPLATE_INSTALLER}. Make it match, move the "
                            f"change into the template and every tool that has {name}(), or, if it differs on "
-                           "purpose, add the line `# differs from _template: <reason>` right under its def.")
+                           "purpose, add the line `# differs from the template: <reason>` right under its def.")
             elif reason == "":
                 report.add("installers", f"{where}{path}:{line}",
-                           f"{name}() has a `# differs from _template:` line with no reason. Say why it differs.")
+                           f"{name}() has a `# differs from the template:` line with no reason. Say why it differs.")
             elif reason is not None and same:
                 report.add("installers", f"{where}{path}:{line}",
                            f"{name}() is marked as differing from the one in {TEMPLATE_INSTALLER}, but matches "
-                           "it. Delete the `# differs from _template:` line.")
+                           "it. Delete the `# differs from the template:` line.")
 
 
 def run_gitleaks(report, exe, *args):

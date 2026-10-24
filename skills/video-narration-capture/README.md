@@ -48,7 +48,7 @@ This should have let me buy it. I had 800 coins That looks like a bug
 From the root of the cloned repo (PowerShell, or bash with `python3` on macOS and Linux):
 
 ```bash
-cd video-narration-capture
+cd skills/video-narration-capture
 python install.py
 ```
 
@@ -165,7 +165,7 @@ From the root of the cloned repo, pull the new version, then rerun the install (
 
 ```bash
 git pull
-cd video-narration-capture
+cd skills/video-narration-capture
 python install.py
 ```
 
@@ -174,9 +174,11 @@ The rerun is quick: ffmpeg, the packages and the model are already there. To sta
 ```bash
 git fetch --tags
 git checkout video-narration-capture-v1.0.0
-cd video-narration-capture
+cd skills/video-narration-capture
 python install.py
 ```
+
+Releases up to video-narration-capture-v1.1.1 have the tool's folder at the root of the repo, so after checking out one of those, it's `cd video-narration-capture` instead.
 
 This moves the whole clone, so every other tool in it goes back to that point too. To return to the latest version, run `git checkout main` and `git pull`, then rerun the install. If you installed from a release zip instead, unzip the new release and run `python install.py` from its `video-narration-capture` folder: it replaces the earlier copy.
 

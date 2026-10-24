@@ -144,7 +144,7 @@ def remove_path(path):
 
 
 def make_link(dst, src):
-    # differs from _template: links only folders, and runs mklink through run()
+    # differs from the template: links only folders, and runs mklink through run()
     try:
         if os.name == "nt":
             # A junction needs no admin rights or Developer Mode.
@@ -270,7 +270,7 @@ def read_record():
 
 
 def write_record(mode, kind, dirs):
-    # differs from _template: records the one skill link, with no hooks or settings
+    # differs from the template: records the one skill link, with no hooks or settings
     record = {
         "format": RECORD_FORMAT,
         "tool": TOOL_NAME,
@@ -482,7 +482,7 @@ def self_test():
 
 
 def main():
-    # differs from _template: installs the skill, ffmpeg and Python packages, then runs the self-test
+    # differs from the template: installs the skill, ffmpeg and Python packages, then runs the self-test
     p = argparse.ArgumentParser(description="Set up or remove the video-narration-capture skill.")
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--copy", action="store_const", const="copy", dest="mode",

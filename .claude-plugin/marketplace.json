@@ -5,7 +5,7 @@
   "plugins": [
     {
       "name": "usage-rings",
-      "source": "./usage-rings",
+      "source": "./mods/usage-rings",
       "description": "Ring gauges by the prompt box for context, 5-hour and 7-day usage"
     }
   ]

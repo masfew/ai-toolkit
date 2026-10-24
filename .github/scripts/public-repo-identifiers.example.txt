@@ -1,6 +1,6 @@
 # Copy this file to ~/.claude/public-repo-identifiers.txt and replace these
 # made-up examples with your own. The pre-push check
-# (scripts/pre_push_check.py) stops a push whose commits contain any of them.
+# (.github/scripts/pre_push_check.py) stops a push whose commits contain any of them.
 # Keep the real file out of the repo: the list is itself personal.
 #
 # One fixed string per line, matched without regard to case. Lines starting
