@@ -108,7 +108,7 @@ PROGRAMS = []
 # Windows only. Background programs to start at sign-in: (shortcut name, script
 # in this folder, arguments). Each runs with pythonw, with no window, through
 # ~/.claude/tools/<tool-name>, and the install starts it straight away.
-# Example: ("Example Tool helper", "helper.py", "run --at-login")
+# Example: ("Example Tool helper", "helper.py", ["run", "--at-login"])
 STARTUP = []
 
 # True if the tool writes under AppData itself, so the install has to run
@@ -841,7 +841,8 @@ def install(mode, instructions=None):
     startup = install_startup(old)
     in_claude_md, claude_md_created = update_instructions(instructions, old)
     write_record(mode, files, settings_created, startup, in_claude_md, claude_md_created)
-    print(f"\nSetup complete. Start a new Claude Code session to use {TOOL_NAME}.")
+    print("\nSetup complete." + (f" Start a new Claude Code session to use {TOOL_NAME}."
+                                 if FILES or HOOKS or INSTRUCTIONS else ""))
     if mode == "copy":
         print(f"The tool was copied to {STABLE_DIR}, so this folder can be deleted.")
     print_human_steps()
