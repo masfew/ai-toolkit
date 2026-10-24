@@ -13,6 +13,7 @@ The tools are grouped by kind, and each kind has its own folder in the repo: `sk
 | Tool | What it does | Tested on |
 |---|---|---|
 | <a id="artifact-style"></a>[artifact-style](skills/artifact-style/) | Skill that gives every Artifact page Claude writes by hand (write-ups, handoffs, reports, runbooks, small tools) one shared look, soft greys, one blue accent, status colours and IBM Plex fonts in light and dark mode, instead of each session picking its own palette | Windows 11 (macOS and Linux untested) |
+| <a id="expected-behavior"></a>[expected-behavior](skills/expected-behavior/) | Skill that writes the Expected Behavior list for a feature or fix you just built: a short, paste-ready walkthrough ("When X, Y should happen") a QA tester runs through, for a ticket, a card or a test plan. Works for UEFN, Roblox and other games, and for apps | Windows 11 (macOS and Linux untested) |
 | <a id="video-narration-capture"></a>[video-narration-capture](skills/video-narration-capture/) | Skill that turns a narrated screen or gameplay recording into key frames, a timestamped transcript and a written breakdown (game teardown, software walkthrough or bug report) that agents can work from | Windows 11 (macOS and Linux untested) |
 
 ### Output Styles

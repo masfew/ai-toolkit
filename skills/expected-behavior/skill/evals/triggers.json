@@ -1,0 +1,22 @@
+[
+  {"query": "just finished the show net button in the driving range of my uefn golf map, write up the expected behavior for the card", "should_trigger": true},
+  {"query": "what should qa test for the new spyglass map prompt in my fortnite creative island?", "should_trigger": true},
+  {"query": "can u write the expected behavior checklist for the respawn timer fix, its a uefn island", "should_trigger": true},
+  {"query": "i fixed the double payout in the coin shop in my roblox game, give me qa test items for it", "should_trigger": true},
+  {"query": "write acceptance criteria for the achievements popup i just built in my fortnite creative map", "should_trigger": true},
+  {"query": "make me a test checklist for the testers, the new coin pickup in my roblox game is done", "should_trigger": true},
+  {"query": "write up expected behavior for the sprint boost upgrade in my roblox game, its going on a jira ticket", "should_trigger": true},
+  {"query": "the dark mode toggle in our react settings page is done, what should the qa team check? paste ready pls", "should_trigger": true},
+  {"query": "feature is built in my godot game, now i need the expected behavior items for the qa team to tick off", "should_trigger": true},
+  {"query": "we just finished the boss bell pause fix in our unity wave shooter, can you do the expected behavior list for the card", "should_trigger": true},
+  {"query": "write jest unit tests for the wallet module in my roblox game", "should_trigger": false},
+  {"query": "write a verse test harness for the boss fight in uefn that logs pass or fail", "should_trigger": false},
+  {"query": "why does my verse code in uefn throw a build error on the achievements manager", "should_trigger": false},
+  {"query": "write a bug report for the testers: players lose their coins when they rejoin my roblox game", "should_trigger": false},
+  {"query": "write release notes for this update of my fortnite map", "should_trigger": false},
+  {"query": "review my diff for bugs before i merge", "should_trigger": false},
+  {"query": "move the coin pickups card to the done list on my kanban board", "should_trigger": false},
+  {"query": "write a game design doc for my new roblox obby from these notes", "should_trigger": false},
+  {"query": "add playwright end to end tests for the checkout flow in our web app", "should_trigger": false},
+  {"query": "turn this feature idea into user stories for the backlog: players can trade pets with friends", "should_trigger": false}
+]
