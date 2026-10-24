@@ -1,0 +1,107 @@
+<Window x:Class="UAssetLens.App.MergeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:UAssetLens.App"
+        Style="{StaticResource LensWindow}" WindowStartupLocation="CenterScreen" Width="1040" Height="660" MinWidth="640" MinHeight="360">
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type local:GroupItem}">
+            <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Row}" BorderThickness="0,0,0,1">
+                <TextBlock Text="{Binding Title}" Foreground="{StaticResource Muted}" FontSize="11" Padding="14,9,14,5"/>
+            </Border>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type local:MergeItem}">
+            <Border Background="{Binding RowBackground}" BorderBrush="{StaticResource Row}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="2*"/>
+                    </Grid.ColumnDefinitions>
+                    <WrapPanel Margin="14,5">
+                        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" Margin="0,0,6,0"/>
+                        <Border Background="{Binding TagBackground}" CornerRadius="3" Padding="6,1" VerticalAlignment="Center"
+                                Visibility="{Binding TagVisibility}">
+                            <TextBlock Text="{Binding Tag}" Foreground="{Binding TagForeground}" FontSize="10.5"/>
+                        </Border>
+                    </WrapPanel>
+                    <TextBlock Grid.Column="1" Style="{StaticResource CellText}" Text="{Binding Base.Text}" Foreground="{Binding Base.Foreground}"
+                               Background="{Binding Base.Background}"/>
+                    <TextBlock Grid.Column="2" Style="{StaticResource CellText}" Text="{Binding Theirs.Text}" Foreground="{Binding Theirs.Foreground}"
+                               Background="{Binding Theirs.Background}"/>
+                    <TextBlock Grid.Column="3" Style="{StaticResource CellText}" Text="{Binding Yours.Text}" Foreground="{Binding Yours.Foreground}"
+                               Background="{Binding Yours.Background}"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="14,12,14,10" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <WrapPanel>
+                    <TextBlock x:Name="NameText" FontSize="17" FontWeight="SemiBold" Foreground="White" Margin="0,0,10,0"
+                               TextTrimming="CharacterEllipsis"/>
+                    <Border x:Name="TypeChip" Background="{StaticResource Row}" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                            CornerRadius="9" Padding="8,2" VerticalAlignment="Center">
+                        <TextBlock x:Name="TypeText" FontSize="11" FontWeight="Medium"/>
+                    </Border>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Top" Padding="14,7" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1">
+            <DockPanel>
+                <CheckBox x:Name="ShowUnchanged" DockPanel.Dock="Right" Style="{StaticResource LensToggle}" Content="Show unchanged"
+                          Checked="ShowUnchanged_Changed" Unchecked="ShowUnchanged_Changed"/>
+                <TextBlock x:Name="ChangedText" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Padding="14,9" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0">
+            <DockPanel>
+                <Button x:Name="KeepYoursButton" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Keep yours" Click="KeepYours_Click"
+                        VerticalAlignment="Center"/>
+                <Button DockPanel.Dock="Right" Style="{StaticResource LensButton}" Content="Keep theirs" Click="KeepTheirs_Click" VerticalAlignment="Center"/>
+                <Button DockPanel.Dock="Right" Style="{StaticResource LensButton}" Content="Cancel" IsCancel="True" Click="Cancel_Click"
+                        VerticalAlignment="Center" Margin="12,0,0,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="PathText" Style="{StaticResource Meta}" Margin="0"/>
+                    <TextBlock x:Name="VersionsText" Style="{StaticResource Meta}"/>
+                    <TextBlock x:Name="FooterText" Foreground="{StaticResource Muted}" Margin="0,5,0,0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Margin="14,10" Padding="10,8" Background="{StaticResource Panel}"
+                BorderBrush="{StaticResource Orange}" BorderThickness="3,0,0,0" CornerRadius="0,4,4,0">
+            <TextBlock x:Name="WarningText" TextWrapping="Wrap"/>
+        </Border>
+
+        <Border x:Name="ProblemBox" DockPanel.Dock="Top" Margin="14,10,14,0" Padding="10,8" Background="{StaticResource Panel}"
+                BorderBrush="{StaticResource Orange}" BorderThickness="3,0,0,0" CornerRadius="0,4,4,0" Visibility="Collapsed">
+            <TextBlock x:Name="ProblemText" TextWrapping="Wrap"/>
+        </Border>
+
+        <Border DockPanel.Dock="Top" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Margin="0,6,10,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource ColumnHead}" Text="Setting"/>
+                <TextBlock Grid.Column="1" Style="{StaticResource ColumnHead}" Text="Base"/>
+                <TextBlock x:Name="TheirsHead" Grid.Column="2" Style="{StaticResource ColumnHead}" Text="Theirs"/>
+                <TextBlock Grid.Column="3" Style="{StaticResource ColumnHead}" Text="Yours"/>
+            </Grid>
+        </Border>
+
+        <Grid>
+            <ItemsControl x:Name="RowsList" Style="{StaticResource RowList}"/>
+            <TextBlock x:Name="EmptyText" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       TextAlignment="Center" TextWrapping="Wrap" Margin="24" Visibility="Collapsed"/>
+        </Grid>
+    </DockPanel>
+</Window>

@@ -131,6 +131,11 @@ ALLOWED = [
     ("*.py", re.compile(r"^\s*\x40(?=[A-Za-z_][\w.]*\s*(?:\(|$))")),
     # C# verbatim strings and identifiers (\x40"C:\x", $\x40"{x}", \x40base), in C# files only.
     ("*.cs", re.compile(r"(?<![\w.+-])\$?\x40(?=[A-Za-z_\"])")),
+    # Plastic SCM's version names (X.uasset\x40cs:8\x40/main/branch), which an email address can't match
+    # since a number follows cs:.
+    (None, re.compile(r"\x40cs:\d+\x40(?=/)|\x40cs:\d+\b")),
+    # The character literal '\x40', in C# files only.
+    ("*.cs", re.compile(r"'\x40'")),
     # The word "documents" on its own, not a folder in a path. ([o] keeps the
     # pattern itself from matching the identifier it allows.)
     (None, re.compile(r"(?<![\\/])\bd[o]cuments\b(?![\\/])", re.I)),

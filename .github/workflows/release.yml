@@ -6,8 +6,12 @@
 # notes from that Changes entry and zips the folder with the tool's name as its
 # top folder; run it locally to see what a release will hold before pushing
 # its tag.
-# Only this job can write to the repo, actions/checkout is pinned to a commit,
-# and the release is made with the gh CLI that GitHub's runners come with.
+# A tool whose folder holds a build.ps1 (an app that ships an exe, such as
+# UAsset Lens) also gets the build job: it runs `build.ps1 -OutDir <folder>`
+# on Windows with the .NET SDK set up, and attaches every file it puts there
+# to the release.
+# Only these jobs can write to the repo, actions are pinned to commits, and the
+# release is made with the gh CLI that GitHub's runners come with.
 name: Release
 
 on:
@@ -22,6 +26,9 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    outputs:
+      folder: ${{ steps.build.outputs.folder }}
+      build: ${{ steps.build.outputs.build }}
     steps:
       - name: Check out the tagged commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -38,3 +45,37 @@ jobs:
           TOOL: ${{ steps.build.outputs.tool }}
           VERSION: ${{ steps.build.outputs.version }}
         run: gh release create "$GITHUB_REF_NAME" "$RUNNER_TEMP/$GITHUB_REF_NAME.zip" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TOOL $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+
+  build:
+    needs: release
+    if: needs.release.outputs.build == 'true'
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the .NET SDK
+        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 # v5.0.1
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build
+        shell: pwsh
+        env:
+          FOLDER: ${{ needs.release.outputs.folder }}
+        run: |
+          & "./$env:FOLDER/build.ps1" -OutDir "$env:RUNNER_TEMP/dist"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Attach the built files to the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = Get-ChildItem "$env:RUNNER_TEMP/dist" -File | ForEach-Object FullName
+          if (-not $files) { Write-Error "build.ps1 put nothing in its -OutDir folder."; exit 1 }
+          gh release upload "$env:GITHUB_REF_NAME" $files --repo "$env:GITHUB_REPOSITORY"

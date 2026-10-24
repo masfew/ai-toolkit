@@ -1,0 +1,34 @@
+# Builds UAsset Lens, runs its tests and publishes its exe whenever its folder
+# changes. The tests that need real UEFN files are skipped here, since those
+# files aren't in the repo (see the tool's README, "Testing with Your Own
+# Files"). Actions are pinned to commits.
+name: UAsset Lens
+
+on:
+  push:
+    paths:
+      - 'apps/uasset-lens/**'
+      - '.github/workflows/uasset-lens.yml'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: apps/uasset-lens
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 # v5.0.1
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build UAssetLens.slnx -c Release
+      - run: dotnet test tests/UAssetLens.Tests -c Release --no-build
+      - name: Publish the single exe
+        run: ./build.ps1 -OutDir "$env:RUNNER_TEMP/dist"
+        shell: pwsh

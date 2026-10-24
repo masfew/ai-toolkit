@@ -35,6 +35,7 @@ Apps are programs that run on their own, outside Claude Code. Claude Code can st
 
 | Tool | What it does | Tested on |
 |---|---|---|
+| <a id="uasset-lens"></a>[uasset-lens](apps/uasset-lens/) | Plastic (Unity Version Control) diff and merge tool for UEFN `.uasset` and `.umap` files: shows the actor's name, its type and the settings that changed instead of "binary file", and in a conflict says what keeping each side would lose | Windows 11 (Windows only) |
 | <a id="wispr-mute"></a>[wispr-mute](apps/wispr-mute/) | Tray helper for Wispr Flow that mutes your audio the moment you start dictating and unmutes it when you stop, with a whitelist of apps (such as Discord) that stay audible, and keeps Wispr Flow's tray icon pinned across its updates | Windows 11 (Windows only) |
 
 ## Linking to a Tool

@@ -35,8 +35,10 @@ install paths use only the name. The secret-scan workflow runs it on every
 push, and .github/scripts/pre_push_check.py runs the same check before every commit
 and push.
 
-In GitHub Actions it also writes tool=<tool> and version=<X.Y.Z> to the step's
-outputs. Exits with status 1 and a FAILED message saying what to fix.
+In GitHub Actions it also writes tool=<tool>, version=<X.Y.Z>, folder=<the
+tool's folder> and build=true or false (whether the folder holds a build.ps1,
+which the release workflow runs to attach built files) to the step's outputs.
+Exits with status 1 and a FAILED message saying what to fix.
 """
 import argparse
 import json
@@ -298,7 +300,8 @@ def main():
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
         with open(output, "a", encoding="utf-8") as f:
-            f.write(f"tool={tool}\nversion={version}\n")
+            f.write(f"tool={tool}\nversion={version}\nfolder={folder}\n"
+                    f"build={'true' if f'{folder}/build.ps1' in files else 'false'}\n")
 
 
 if __name__ == "__main__":
