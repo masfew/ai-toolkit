@@ -29,6 +29,14 @@ Mods are Claude Code plugins that change Claude Code's own interface or behaviou
 |---|---|---|
 | <a id="usage-rings"></a>[usage-rings](mods/usage-rings/) | Ring gauges next to the prompt box for context, 5-hour and 7-day usage, blue, then orange from 70% and red from 90%: above the box in the desktop app, as text bars under it in the terminal | Windows 11 (macOS and Linux untested) |
 
+### Apps
+
+Apps are programs that run on their own, outside Claude Code. Claude Code can still install them for you, as [Installing with Claude Code](#installing-with-claude-code) says.
+
+| Tool | What it does | Tested on |
+|---|---|---|
+| <a id="wispr-mute"></a>[wispr-mute](apps/wispr-mute/) | Tray helper for Wispr Flow that mutes your audio the moment you start dictating and unmutes it when you stop, with a whitelist of apps (such as Discord) that stay audible, and keeps Wispr Flow's tray icon pinned across its updates | Windows 11 (Windows only) |
+
 ## Linking to a Tool
 
 To share a tool, link to its row in the Tools tables above: `https://github.com/masfew/toolbox#<tool>`, for example [`https://github.com/masfew/toolbox#video-narration-capture`](https://github.com/masfew/toolbox#video-narration-capture). To share a version you can download, link to the [releases page](https://github.com/masfew/toolbox/releases).
